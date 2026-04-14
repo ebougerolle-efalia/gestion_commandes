@@ -16,8 +16,8 @@ Application de gestion des commandes pour **Pierrick Bougerolle, Charcutier-Trai
 
 ```bash
 # Cloner le projet
-git clone <url> bougerolle-symfony
-cd bougerolle-symfony
+git clone <url> gestion_commandes
+cd gestion_commandes
 
 # Installer les dépendances PHP
 composer install
@@ -42,7 +42,7 @@ Les backups JSON sont **compatibles** avec l'ancienne version Node.js (format v2
 ## Structure du projet
 
 ```
-bougerolle-symfony/
+gestion_commandes/
 ├── bin/console                 # Console Symfony
 ├── deploy.sh                   # Script de déploiement (install + update)
 ├── setup-server.sh             # Configuration serveur Debian/Ubuntu
@@ -192,12 +192,12 @@ L'application dispose de scripts automatisés pour le premier déploiement et le
 ssh user@serveur
 
 # Cloner le dépôt
-sudo git clone https://github.com/VOTRE-USER/bougerolle-symfony.git /var/www/bougerolle
-cd /var/www/bougerolle
+sudo git clone https://github.com/ebougerolle-efalia/gestion_commandes.git /var/www/gestion_commandes
+cd /var/www/gestion_commandes
 
 # Option A — Configuration automatique (Debian/Ubuntu)
 # Installe PHP, Nginx, Composer, configure le vhost, lance le déploiement
-sudo ./setup-server.sh bougerolle.votre-domaine.fr
+sudo ./setup-server.sh gestion_commandes.bougerolle.ovh
 
 # Option B — Configuration manuelle
 # 1. Installer PHP 8.1+, Composer, Nginx/Apache
@@ -215,7 +215,7 @@ chmod +x deploy.sh
 ### 2. Mise à jour
 
 ```bash
-cd /var/www/bougerolle
+cd /var/www/gestion_commandes
 ./deploy.sh
 ```
 
@@ -232,7 +232,7 @@ Le script `deploy.sh` fait automatiquement :
 Pour déclencher un déploiement à chaque `git push` :
 
 **Sur GitHub** → Settings → Webhooks → Add webhook :
-- Payload URL : `https://bougerolle.votre-domaine.fr/webhook.php`
+- Payload URL : `https://gestion_commandes.bougerolle.ovh/webhook.php`
 - Content type : `application/json`
 - Secret : le même que `WEBHOOK_SECRET` dans `.env.local`
 - Events : ☑ Just the push event
@@ -240,9 +240,9 @@ Pour déclencher un déploiement à chaque `git push` :
 **Sur le serveur** — autoriser www-data à exécuter le script :
 
 ```bash
-sudo visudo -f /etc/sudoers.d/bougerolle
+sudo visudo -f /etc/sudoers.d/gestion_commandes
 # Ajouter :
-www-data ALL=(ALL) NOPASSWD: /var/www/bougerolle/deploy.sh
+www-data ALL=(ALL) NOPASSWD: /var/www/gestion_commandes/deploy.sh
 ```
 
 Les logs du webhook sont dans `var/log/webhook.log`.
@@ -267,8 +267,8 @@ git push origin main
 ```nginx
 server {
     listen 80;
-    server_name bougerolle.votre-domaine.fr;
-    root /var/www/bougerolle/public;
+    server_name gestion_commandes.bougerolle.ovh;
+    root /var/www/gestion_commandes/public;
     index index.php;
 
     client_max_body_size 20M;
@@ -292,17 +292,17 @@ server {
 HTTPS avec Certbot :
 ```bash
 sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d bougerolle.votre-domaine.fr
+sudo certbot --nginx -d gestion_commandes.bougerolle.ovh
 ```
 
 #### Apache (mod_rewrite)
 
 ```apache
 <VirtualHost *:80>
-    ServerName bougerolle.votre-domaine.fr
-    DocumentRoot /var/www/bougerolle/public
+    ServerName gestion_commandes.bougerolle.ovh
+    DocumentRoot /var/www/gestion_commandes/public
 
-    <Directory /var/www/bougerolle/public>
+    <Directory /var/www/gestion_commandes/public>
         AllowOverride All
         Require all granted
     </Directory>
@@ -322,7 +322,7 @@ Accessible depuis tablette/autre PC via `http://<ip-du-pc>:8080`.
 ## Notes techniques
 
 - **Cache Twig** : après modification des templates, vider le cache avec `php bin/console cache:clear` ou supprimer `var/cache/`
-- **SQLite** : la base est un fichier unique dans `var/data/bougerolle.db` — facile à sauvegarder, copier, déplacer
+- **SQLite** : la base est un fichier unique dans `var/data/gestion_commandes.db` — facile à sauvegarder, copier, déplacer
 - **Tailwind CSS v4** est chargé via le script CDN `@tailwindcss/browser@4` — pas de build nécessaire, les classes sont interprétées à la volée
 - **Pas de jQuery** — tout le JavaScript est en vanilla ES6+
 - Les étiquettes utilisent `@page { size: 210mm 297mm; margin: 0 }` — dans les paramètres d'impression du navigateur, sélectionner "Taille réelle / 100%" et marges "Aucune"
