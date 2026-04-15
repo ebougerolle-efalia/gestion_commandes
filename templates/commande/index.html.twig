@@ -1,0 +1,463 @@
+{% extends 'base.html.twig' %}
+{% block title %}Commandes — {{ carte.nom }}{% endblock %}
+{% block page_title %}Commandes{% endblock %}
+{% block page_actions %}
+    <a href="{{ path('app_commande_new', {carteId: carte.id}) }}" class="inline-flex items-center gap-2 rounded-lg bg-blue-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-600 transition-colors">
+        <i class="fas fa-plus text-[11px]"></i> Nouvelle commande
+    </a>
+{% endblock %}
+
+{% block body %}
+{% set totalCA = 0 %}{% set totalAcomptes = 0 %}
+{% for cmd in commandes %}{% set totalCA = totalCA + cmd.total %}{% set totalAcomptes = totalAcomptes + cmd.acompte %}{% endfor %}
+
+{# ===== KPI Boxes (TailAdmin style) ===== #}
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-7">
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 flex items-center gap-4">
+        <div class="w-11 h-11 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-shopping-cart text-blue-500 text-[15px]"></i>
+        </div>
+        <div>
+            <span class="text-[26px] font-bold text-[#1c2434] leading-tight">{{ commandes|length }}</span>
+            <p class="text-[13px] text-gray-500 mt-0.5">Commandes</p>
+        </div>
+    </div>
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 flex items-center gap-4">
+        <div class="w-11 h-11 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-euro-sign text-green-500 text-[15px]"></i>
+        </div>
+        <div>
+            <span class="text-[26px] font-bold text-[#1c2434] leading-tight">{{ totalCA|number_format(0, ',', ' ') }}</span>
+            <span class="text-sm text-gray-400 ml-0.5">€</span>
+            <p class="text-[13px] text-gray-500 mt-0.5">Chiffre d'affaires</p>
+        </div>
+    </div>
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 flex items-center gap-4">
+        <div class="w-11 h-11 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-hand-holding-usd text-purple-500 text-[15px]"></i>
+        </div>
+        <div>
+            <span class="text-[26px] font-bold text-[#1c2434] leading-tight">{{ totalAcomptes|number_format(0, ',', ' ') }}</span>
+            <span class="text-sm text-gray-400 ml-0.5">€</span>
+            <p class="text-[13px] text-gray-500 mt-0.5">Acomptes</p>
+        </div>
+    </div>
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 flex items-center gap-4">
+        <div class="w-11 h-11 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-clock text-amber-500 text-[15px]"></i>
+        </div>
+        <div>
+            <span class="text-[26px] font-bold text-[#1c2434] leading-tight">{{ (totalCA - totalAcomptes)|number_format(0, ',', ' ') }}</span>
+            <span class="text-sm text-gray-400 ml-0.5">€</span>
+            <p class="text-[13px] text-gray-500 mt-0.5">Reste à encaisser</p>
+        </div>
+    </div>
+</div>
+
+{# ===== Table Card ===== #}
+<div class="rounded-2xl border border-gray-200 bg-white">
+    {# Header avec recherche + per-page #}
+    <div class="px-5 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <label class="text-sm text-gray-500">Afficher</label>
+            <select id="perPage" class="rounded-lg border border-gray-200 px-3 py-1.5 text-sm bg-white outline-none focus:border-blue-400">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="15">15</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+            </select>
+            <label class="text-sm text-gray-500">commandes</label>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <input type="text" id="searchCommandes" placeholder="Rechercher…" class="w-60 pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none bg-gray-50 placeholder-gray-400">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+            </div>
+            <button id="btnExpandAll" class="hidden sm:inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue-500 border border-gray-200 rounded-lg px-3 py-2 hover:border-blue-200 transition-colors" title="Tout déplier/replier">
+                <i class="fas fa-expand-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    {# Table #}
+    <div class="overflow-x-auto">
+        <table class="w-full" id="tableCommandes">
+            <thead>
+                <tr class="border-b border-gray-100 text-left">
+                    <th class="py-3 pl-5 pr-2 w-8"></th>
+                    <th class="py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">N°</th>
+                    <th class="py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500">Client</th>
+                    <th class="py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500 hidden md:table-cell">Téléphone</th>
+                    <th class="py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500 text-right">Total</th>
+                    <th class="py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500 text-right hidden lg:table-cell">Acompte</th>
+                    <th class="py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500 text-right">Reste</th>
+                    <th class="py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500 hidden lg:table-cell">Retrait</th>
+                    <th class="py-3 px-3 text-xs font-medium uppercase tracking-wider text-gray-500 text-center">Articles</th>
+                    <th class="py-3 px-3 pr-5 text-xs font-medium uppercase tracking-wider text-gray-500 text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for cmd in commandes %}
+                <tr class="cmd-row group hover:bg-gray-50/80 cursor-pointer transition-colors" data-detail="detail-{{ cmd.id }}" data-search="{{ cmd.numero|lower }} {{ cmd.nomClient|lower }} {{ cmd.telephone }}">
+                    <td class="py-3.5 pl-5 pr-2">
+                        <i class="fas fa-chevron-right chevron-icon text-gray-300 group-hover:text-gray-500 text-[10px]"></i>
+                    </td>
+                    <td class="py-3.5 px-3">
+                        <span class="font-semibold text-sm text-[#1c2434]">{{ cmd.numero }}</span>
+                        {% if cmd.numeroDevis %}<br><span class="text-[11px] text-gray-400">{{ cmd.numeroDevis }}</span>{% endif %}
+                    </td>
+                    <td class="py-3.5 px-3">
+                        <span class="text-sm text-gray-700 font-medium">{{ cmd.nomClient }}</span>
+                    </td>
+                    <td class="py-3.5 px-3 hidden md:table-cell">
+                        <a href="tel:{{ cmd.telephone }}" class="text-sm text-blue-500 hover:text-blue-700">{{ cmd.telephone }}</a>
+                    </td>
+                    <td class="py-3.5 px-3 text-right">
+                        <span class="text-sm font-semibold text-[#1c2434]">{{ cmd.total|number_format(2, ',', ' ') }} €</span>
+                    </td>
+                    <td class="py-3.5 px-3 text-right hidden lg:table-cell">
+                        <span class="text-sm text-gray-500">{{ cmd.acompte|number_format(2, ',', ' ') }} €</span>
+                    </td>
+                    <td class="py-3.5 px-3 text-right">
+                        {% if cmd.reste > 0 %}
+                            <span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-600">{{ cmd.reste|number_format(2, ',', ' ') }} €</span>
+                        {% else %}
+                            <span class="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-semibold text-green-600">Soldé</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-3.5 px-3 hidden lg:table-cell">
+                        {% if cmd.dateRetrait %}
+                            <span class="text-sm text-gray-700">{{ cmd.dateRetrait|date('d/m/Y') }}</span>
+                            {% if cmd.creneauRetrait %}<br><span class="text-[11px] text-gray-400">{{ cmd.creneauRetrait }}</span>{% endif %}
+                        {% else %}<span class="text-gray-300">—</span>{% endif %}
+                    </td>
+                    <td class="py-3.5 px-3 text-center">
+                        {% set nbFait = 0 %}{% for l in cmd.lignes %}{% if l.produitFait %}{% set nbFait = nbFait + 1 %}{% endif %}{% endfor %}
+                        {% if nbFait == cmd.lignes|length and cmd.lignes|length > 0 %}
+                            <span class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-600"><i class="fas fa-check text-[9px]"></i> {{ cmd.lignes|length }}</span>
+                        {% elseif nbFait > 0 %}
+                            <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-600">{{ nbFait }}/{{ cmd.lignes|length }}</span>
+                        {% else %}
+                            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">{{ cmd.lignes|length }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-3.5 px-3 pr-5 text-center" onclick="event.stopPropagation()">
+                        <div class="inline-flex items-center gap-1">
+                            <a href="{{ path('app_commande_edit', {carteId: carte.id, id: cmd.id}) }}" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors" title="Modifier"><i class="fas fa-pencil-alt text-xs"></i></a>
+                            <a href="{{ path('app_commande_print', {carteId: carte.id, id: cmd.id}) }}" target="_blank" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Imprimer"><i class="fas fa-print text-xs"></i></a>
+                            <button onclick="confirmDelete('{{ path('app_commande_delete', {carteId: carte.id, id: cmd.id}) }}','{{ cmd.numero }}')" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Supprimer"><i class="fas fa-trash text-xs"></i></button>
+                        </div>
+                    </td>
+                </tr>
+                {# Detail row #}
+                <tr class="detail-row" id="detail-{{ cmd.id }}" style="display:none">
+                    <td colspan="10" class="p-0">
+                        <div class="bg-[#f8fafc] px-6 py-4 border-l-[3px] border-blue-400 mx-4 mb-3 rounded-lg">
+                            {% if cmd.commentaire %}<p class="text-sm text-gray-500 italic mb-3"><i class="fas fa-comment-alt mr-1.5 text-gray-300"></i>{{ cmd.commentaire }}</p>{% endif %}
+                            <table class="w-full max-w-2xl text-sm">
+                                <thead><tr class="text-[11px] uppercase tracking-wider text-gray-400 border-b border-gray-200/60"><th class="pb-2 text-left font-medium">Produit</th><th class="pb-2 text-center font-medium w-28">Qté / Poids</th><th class="pb-2 text-right font-medium w-24">P.U.</th><th class="pb-2 text-right font-medium w-28">Montant</th><th class="pb-2 text-center font-medium w-14">Fait</th></tr></thead>
+                                <tbody class="divide-y divide-gray-100">
+                                {% for ligne in cmd.lignes %}
+                                <tr class="group/line" id="ligne-row-{{ ligne.id }}">
+                                    <td class="py-2.5 text-gray-700 pr-3">
+                                        {{ ligne.produitNom }}
+                                        {% if ligne.aPeser %}<span class="ml-1.5 inline-flex items-center rounded-full bg-amber-100 text-amber-700 px-2 py-px text-[10px] font-medium">À peser</span>{% endif %}
+                                        {% if ligne.commentaire %}<br><span class="text-[11px] text-gray-400">{{ ligne.commentaire }}</span>{% endif %}
+                                    </td>
+                                    <td class="py-2.5 text-center">
+                                        {% if ligne.aPeser %}
+                                        <div class="flex items-center justify-center gap-1">
+                                            <input type="number" class="poids-input w-20 text-center rounded-lg border border-amber-300 bg-amber-50 py-1 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30"
+                                                   value="{{ ligne.quantite > 0 ? ligne.quantite : '' }}" min="0" step="0.01" placeholder="0.00"
+                                                   data-ligne-id="{{ ligne.id }}" data-prix="{{ ligne.prixUnitaire }}">
+                                            <span class="text-xs text-gray-400">kg</span>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-gray-600">{{ ligne.quantite }} <span class="text-gray-400">{{ ligne.unite }}</span></span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-2.5 text-right text-gray-500">{{ ligne.prixUnitaire|number_format(2, ',', ' ') }} €{% if ligne.aPeser %}/kg{% endif %}</td>
+                                    <td class="py-2.5 text-right font-semibold" id="montant-{{ ligne.id }}">
+                                        {% if ligne.aPeser and ligne.montantPese == 0 %}
+                                            <span class="text-amber-500 font-medium text-xs">À peser</span>
+                                        {% else %}
+                                            <span class="text-gray-700">{{ ligne.montantLabel }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-2.5 text-center">
+                                        <button class="production-badge w-7 h-7 rounded-full inline-flex items-center justify-center transition-all
+                                            {{ ligne.produitFait ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-400 hover:bg-gray-200' }}"
+                                            data-ligne-id="{{ ligne.id }}" data-fait="{{ ligne.produitFait ? '1' : '0' }}">
+                                            <i class="fas fa-{{ ligne.produitFait ? 'check' : 'circle' }} text-[10px]"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10" class="py-16 text-center"><i class="fas fa-inbox text-3xl text-gray-200 mb-3 block"></i><p class="text-sm text-gray-400">Aucune commande.</p><a href="{{ path('app_commande_new', {carteId: carte.id}) }}" class="text-sm text-blue-500 hover:underline mt-1 inline-block">Créer la première →</a></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Pagination footer #}
+    <div class="px-5 py-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p class="text-sm text-gray-500" id="paginationInfo">Affichage de 0 à 0 sur 0</p>
+        <nav class="flex items-center gap-1" id="paginationNav"></nav>
+    </div>
+</div>
+<div id="deleteModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/50">
+    <form id="deleteForm" method="post" class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4 overflow-hidden">
+        <div class="px-6 pt-6 pb-2 text-center">
+            <div class="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4"><i class="fas fa-trash text-red-500 text-xl"></i></div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-1">Supprimer la commande</h3>
+            <p class="text-sm text-gray-500">Supprimer <strong id="deleteNumero"></strong> définitivement ?</p>
+        </div>
+        <div class="flex gap-3 px-6 py-5">
+            <button type="button" onclick="closeDeleteModal()" class="flex-1 py-2.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Annuler</button>
+            <button type="submit" class="flex-1 py-2.5 rounded-lg bg-red-500 text-sm font-medium text-white hover:bg-red-600 transition-colors">Supprimer</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+// ===== PAGINATION ENGINE =====
+const allEntries = [...document.querySelectorAll('.cmd-row')];
+let filtered = [...allEntries];
+let currentPage = 1;
+let perPage = parseInt(document.getElementById('perPage').value);
+
+function getDetailRow(cmdRow) {
+    return document.getElementById(cmdRow.dataset.detail);
+}
+
+function applyPagination() {
+    // Masquer tout d'abord
+    allEntries.forEach(row => {
+        row.style.display = 'none';
+        const d = getDetailRow(row);
+        if (d) d.style.display = 'none';
+    });
+
+    // Afficher la page courante
+    const start = (currentPage - 1) * perPage;
+    const end = Math.min(start + perPage, filtered.length);
+    const pageEntries = filtered.slice(start, end);
+
+    pageEntries.forEach(row => {
+        row.style.display = '';
+        // Garder le détail fermé sauf si déjà ouvert (chevron)
+        const icon = row.querySelector('.chevron-icon');
+        if (icon && icon.classList.contains('open')) {
+            const d = getDetailRow(row);
+            if (d) d.style.display = '';
+        }
+    });
+
+    renderPaginationInfo(start, end, filtered.length);
+    renderPaginationNav();
+}
+
+function renderPaginationInfo(start, end, total) {
+    const info = document.getElementById('paginationInfo');
+    if (total === 0) {
+        info.textContent = 'Aucun résultat';
+    } else {
+        info.textContent = `Affichage de ${start + 1} à ${end} sur ${total} commande${total > 1 ? 's' : ''}`;
+    }
+}
+
+function renderPaginationNav() {
+    const nav = document.getElementById('paginationNav');
+    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+    nav.innerHTML = '';
+
+    const btnClass = 'w-9 h-9 flex items-center justify-center rounded-lg text-sm transition-colors';
+    const activeClass = 'bg-blue-500 text-white font-medium';
+    const normalClass = 'border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300';
+    const disabledClass = 'border border-gray-100 text-gray-300 cursor-not-allowed';
+
+    // Précédent
+    const prev = document.createElement('button');
+    prev.type = 'button';
+    prev.className = `${btnClass} ${currentPage === 1 ? disabledClass : normalClass}`;
+    prev.innerHTML = '<i class="fas fa-chevron-left text-[10px]"></i>';
+    prev.disabled = currentPage === 1;
+    prev.onclick = () => { if (currentPage > 1) { currentPage--; applyPagination(); } };
+    nav.appendChild(prev);
+
+    // Pages
+    const maxVisible = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+
+    if (startPage > 1) {
+        nav.appendChild(createPageBtn(1));
+        if (startPage > 2) {
+            const dots = document.createElement('span');
+            dots.className = 'w-9 h-9 flex items-center justify-center text-gray-400 text-xs';
+            dots.textContent = '…';
+            nav.appendChild(dots);
+        }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        nav.appendChild(createPageBtn(i));
+    }
+
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            const dots = document.createElement('span');
+            dots.className = 'w-9 h-9 flex items-center justify-center text-gray-400 text-xs';
+            dots.textContent = '…';
+            nav.appendChild(dots);
+        }
+        nav.appendChild(createPageBtn(totalPages));
+    }
+
+    // Suivant
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = `${btnClass} ${currentPage === totalPages ? disabledClass : normalClass}`;
+    next.innerHTML = '<i class="fas fa-chevron-right text-[10px]"></i>';
+    next.disabled = currentPage === totalPages;
+    next.onclick = () => { if (currentPage < totalPages) { currentPage++; applyPagination(); } };
+    nav.appendChild(next);
+
+    function createPageBtn(page) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `${btnClass} ${page === currentPage ? activeClass : normalClass}`;
+        btn.textContent = page;
+        btn.onclick = () => { currentPage = page; applyPagination(); };
+        return btn;
+    }
+}
+
+// ===== SEARCH =====
+document.getElementById('searchCommandes').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    if (q === '') {
+        filtered = [...allEntries];
+    } else {
+        filtered = allEntries.filter(row => row.dataset.search.includes(q));
+    }
+    currentPage = 1;
+    applyPagination();
+});
+
+// ===== PER PAGE =====
+document.getElementById('perPage').addEventListener('change', function() {
+    perPage = parseInt(this.value);
+    currentPage = 1;
+    applyPagination();
+});
+
+// ===== EXPAND/COLLAPSE =====
+document.querySelectorAll('.cmd-row').forEach(row => {
+    row.addEventListener('click', function() {
+        const detail = getDetailRow(this);
+        if (!detail) return;
+        const icon = this.querySelector('.chevron-icon');
+        const open = detail.style.display === 'none' || !detail.style.display;
+        detail.style.display = open ? '' : 'none';
+        icon.classList.toggle('open', open);
+        // Si on ferme, s'assurer que display est bien 'none'
+        if (!open) detail.style.display = 'none';
+    });
+});
+
+let allOpen = false;
+document.getElementById('btnExpandAll')?.addEventListener('click', () => {
+    allOpen = !allOpen;
+    // Seulement sur les lignes visibles (page courante)
+    const start = (currentPage - 1) * perPage;
+    const end = Math.min(start + perPage, filtered.length);
+    filtered.slice(start, end).forEach(row => {
+        const d = getDetailRow(row);
+        if (d) d.style.display = allOpen ? '' : 'none';
+        const icon = row.querySelector('.chevron-icon');
+        if (icon) icon.classList.toggle('open', allOpen);
+    });
+});
+
+// ===== DELETE MODAL =====
+function confirmDelete(url, numero) {
+    document.getElementById('deleteForm').action = url;
+    document.getElementById('deleteNumero').textContent = numero;
+    const m = document.getElementById('deleteModal');
+    m.classList.remove('hidden'); m.classList.add('flex');
+}
+function closeDeleteModal() {
+    const m = document.getElementById('deleteModal');
+    m.classList.add('hidden'); m.classList.remove('flex');
+}
+document.getElementById('deleteModal').addEventListener('click', function(e) { if (e.target === this) closeDeleteModal(); });
+
+// ===== PRODUCTION TOGGLE =====
+document.querySelectorAll('.production-badge').forEach(btn => {
+    btn.addEventListener('click', async function(e) {
+        e.stopPropagation();
+        const id = this.dataset.ligneId, fait = this.dataset.fait === '1';
+        const resp = await fetch(`/api/production/${id}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({produitFait:!fait}) });
+        if (!resp.ok) return;
+        this.dataset.fait = fait ? '0' : '1';
+        if (fait) { this.classList.remove('bg-green-500','text-white'); this.classList.add('bg-gray-100','text-gray-400'); }
+        else { this.classList.remove('bg-gray-100','text-gray-400'); this.classList.add('bg-green-500','text-white'); }
+        this.querySelector('i').className = 'fas fa-' + (fait ? 'circle' : 'check') + ' text-[10px]';
+        const detailRow = this.closest('.detail-row');
+        const cmdRow = detailRow.previousElementSibling;
+        const badges = detailRow.querySelectorAll('.production-badge');
+        const total = badges.length, done = [...badges].filter(b=>b.dataset.fait==='1').length;
+        const badge = cmdRow.querySelector('td:nth-last-child(2) span');
+        if (!badge) return;
+        if (done === total) { badge.className='inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-600'; badge.innerHTML='<i class="fas fa-check text-[9px]"></i> '+total; }
+        else if (done > 0) { badge.className='inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-600'; badge.textContent=done+'/'+total; }
+        else { badge.className='inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500'; badge.textContent=total; }
+    });
+});
+
+// ===== POIDS (à peser) =====
+document.querySelectorAll('.poids-input').forEach(input => {
+    input.addEventListener('change', async function() {
+        const ligneId = this.dataset.ligneId;
+        const prix = parseFloat(this.dataset.prix);
+        const poids = parseFloat(this.value) || 0;
+        const montantCell = document.getElementById('montant-' + ligneId);
+        if (poids > 0) {
+            const m = Math.round(poids * prix * 100) / 100;
+            montantCell.innerHTML = `<span class="text-gray-700">${m.toFixed(2).replace('.', ',')} €</span>`;
+        } else {
+            montantCell.innerHTML = '<span class="text-amber-500 font-medium text-xs">À peser</span>';
+        }
+        try {
+            const resp = await fetch(`/api/ligne/${ligneId}/poids`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ poids })
+            });
+            if (resp.ok) {
+                const data = await resp.json();
+                const detailRow = this.closest('.detail-row');
+                const cmdRow = detailRow.previousElementSibling;
+                const totalCell = cmdRow.querySelector('td:nth-child(5) span');
+                if (totalCell) totalCell.textContent = data.total.toFixed(2).replace('.', ',') + ' €';
+                this.classList.add('border-green-400', 'bg-green-50');
+                setTimeout(() => { this.classList.remove('border-green-400', 'bg-green-50'); this.classList.add('border-amber-300', 'bg-amber-50'); }, 800);
+            }
+        } catch(e) { console.error(e); }
+    });
+});
+
+// Initialiser la pagination
+applyPagination();
+</script>
+{% endblock %}

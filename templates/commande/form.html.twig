@@ -1,0 +1,367 @@
+{% extends 'base.html.twig' %}
+{% block title %}{{ commande ? 'Modifier' : 'Nouvelle' }} commande{% endblock %}
+{% block page_title %}{{ commande ? 'Modifier ' ~ commande.numero : 'Nouvelle commande' }}{% endblock %}
+{% block page_actions %}<span class="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg text-sm font-semibold">{{ prochainNumero }}</span>{% endblock %}
+
+{% block body %}
+<form method="post" id="commandeForm" class="h-full flex flex-col xl:flex-row gap-6 overflow-hidden">
+    {# Colonne gauche - scrollable #}
+    <div class="xl:flex-[2] overflow-y-auto space-y-6 pr-1">
+        {# Client card #}
+        <div class="rounded-2xl border border-gray-200 bg-white">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-blue-500"></div><h3 class="font-semibold text-[15px] text-[#1c2434]">Client</h3></div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="block text-sm font-medium text-gray-600 mb-1.5">Nom <span class="text-red-400">*</span></label><input type="text" name="nom_client" required value="{{ commande ? commande.nomClient }}" placeholder="Nom et prénom" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 placeholder-gray-400"></div>
+                <div><label class="block text-sm font-medium text-gray-600 mb-1.5">Téléphone <span class="text-red-400">*</span></label><input type="tel" name="telephone" required value="{{ commande ? commande.telephone }}" placeholder="06 00 00 00 00" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 placeholder-gray-400"></div>
+                <div><label class="block text-sm font-medium text-gray-600 mb-1.5">Date de retrait</label><input type="date" name="date_retrait" value="{{ commande and commande.dateRetrait ? commande.dateRetrait|date('Y-m-d') }}" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-gray-600 mb-1.5">Créneau</label><select name="creneau_retrait" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 bg-white"><option value="">—</option>{% for c in ['Matin','10h-12h','12h-14h','Après-midi','14h-16h','16h-18h','Soir'] %}<option {{ commande and commande.creneauRetrait == c ? 'selected' }}>{{ c }}</option>{% endfor %}</select></div>
+                    <div><label class="block text-sm font-medium text-gray-600 mb-1.5">Acompte (€)</label><input type="number" name="acompte" step="0.01" min="0" value="{{ commande ? commande.acompte : 0 }}" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"></div>
+                </div>
+                <div class="md:col-span-2"><label class="block text-sm font-medium text-gray-600 mb-1.5">Commentaire</label><textarea name="commentaire" rows="2" placeholder="Notes, allergies…" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 placeholder-gray-400 resize-none">{{ commande ? commande.commentaire }}</textarea></div>
+            </div>
+        </div>
+
+        {# Search product #}
+        <div class="rounded-2xl border border-gray-200 bg-white">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-green-500"></div><h3 class="font-semibold text-[15px] text-[#1c2434]">Ajouter un produit</h3></div>
+            <div class="p-6">
+                <div class="flex gap-3 items-end">
+                    <div class="flex-1 relative">
+                        <input type="text" id="searchProduit" placeholder="Tapez le nom…" autocomplete="off" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 placeholder-gray-400">
+                        <div id="autocompleteResults" class="absolute z-50 left-0 right-0 mt-1 bg-white rounded-xl border border-gray-200 shadow-lg max-h-64 overflow-y-auto" style="display:none"></div>
+                    </div>
+                    <input type="number" id="searchQte" value="1" min="0.5" step="0.5" class="w-20 rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-center outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20">
+                    <button type="button" id="btnAjouterProduit" disabled class="rounded-lg bg-green-500 hover:bg-green-600 disabled:opacity-40 disabled:cursor-not-allowed px-5 py-2.5 text-sm font-medium text-white transition-colors"><i class="fas fa-plus mr-1 text-[11px]"></i> Ajouter</button>
+                </div>
+            </div>
+        </div>
+
+        {# Cart #}
+        {# Cart #}
+        <div class="rounded-2xl border border-gray-200 bg-white overflow-hidden flex flex-col max-h-[60vh] min-h-[200px]">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+                <div class="flex items-center gap-2"><div class="w-2 h-2 rounded-full bg-gray-800"></div><h3 class="font-semibold text-[15px] text-[#1c2434]">Panier</h3></div>
+                <span id="totalLabel" class="text-base font-bold text-[#1c2434]">0,00 €</span>
+            </div>
+            {# En-tête colonnes (fixe) #}
+            <div class="border-b border-gray-100 flex-shrink-0">
+                <table class="w-full text-sm"><tr class="text-[11px] uppercase tracking-wider text-gray-400"><th class="py-2.5 px-5 text-left font-medium">Produit</th><th class="py-2.5 px-3 text-center font-medium w-24">Qté / Poids</th><th class="py-2.5 px-3 text-right font-medium w-24">P.U.</th><th class="py-2.5 px-3 text-right font-medium w-28">Montant</th><th class="py-2.5 px-3 w-10"></th></tr></table>
+            </div>
+            {# Corps scrollable #}
+            <div class="flex-1 overflow-y-auto">
+                <table class="w-full text-sm">
+                    <tbody id="lignesBody" class="divide-y divide-gray-50"></tbody>
+                </table>
+            </div>
+            {# Pied (fixe) #}
+            <div class="flex-shrink-0">
+                <table class="w-full text-sm"><tr class="bg-[#1c2434]"><td colspan="3" class="py-3 px-5 text-right text-white font-semibold text-sm">TOTAL</td><td class="py-3 px-3 text-right text-white font-bold text-sm w-28" id="totalFooter">0,00 €</td><td class="w-10"></td></tr></table>
+            </div>
+        </div>
+        <input type="hidden" name="lignes_json" id="lignesJson" value="[]">
+
+        <div class="flex justify-between items-center">
+            <a href="{{ path('app_commande_index', {carteId: carte.id}) }}" class="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-5 py-2.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"><i class="fas fa-arrow-left text-[11px]"></i> Retour</a>
+            <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-blue-500 hover:bg-blue-600 px-6 py-3 text-sm font-medium text-white transition-colors"><i class="fas fa-check text-[11px]"></i> {{ commande ? 'Enregistrer' : 'Créer la commande' }}</button>
+        </div>
+    </div>
+
+    {# Colonne droite - recap fixe #}
+    <div class="xl:flex-1 overflow-y-auto">
+        <div class="rounded-2xl border border-gray-200 bg-white flex flex-col">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2 flex-shrink-0"><div class="w-2 h-2 rounded-full bg-purple-500"></div><h3 class="font-semibold text-[15px] text-[#1c2434]">Récapitulatif</h3></div>
+            <div class="p-6 overflow-y-auto flex-1" id="recapPanel"><p class="text-sm text-gray-400 text-center py-4">Ajoutez des produits</p></div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+const CARTE_ID = {{ carte.id }};
+let lignes = [], selectedProduit = null;
+
+{% if commande %}
+lignes = [
+    {% for l in commande.lignes %}
+    {
+        produitCode: {{ l.produitCode|json_encode|raw }},
+        produitNom: {{ l.produitNom|json_encode|raw }},
+        prixUnitaire: {{ l.prixUnitaire }},
+        quantite: {{ l.quantite }},
+        unite: {{ l.unite|json_encode|raw }},
+        aPeser: {{ l.aPeser ? 'true' : 'false' }},
+        montantPese: {{ l.montantPese }},
+        commentaire: {{ (l.commentaire ?? '')|json_encode|raw }}
+    },
+    {% endfor %}
+];
+renderLignes();
+{% endif %}
+
+// ===== AUTOCOMPLETE =====
+const si = document.getElementById('searchProduit');
+const rd = document.getElementById('autocompleteResults');
+let dt;
+
+si.addEventListener('input', function() {
+    clearTimeout(dt);
+    selectedProduit = null;
+    document.getElementById('btnAjouterProduit').disabled = true;
+    if (this.value.length < 1) { rd.style.display = 'none'; return; }
+    dt = setTimeout(async () => {
+        const r = await fetch(`/api/produits/recherche?q=${encodeURIComponent(this.value)}&carteId=${CARTE_ID}`);
+        const produits = await r.json();
+        rd.innerHTML = '';
+        if (!produits.length) {
+            rd.innerHTML = '<div class="px-4 py-3 text-sm text-gray-400">Aucun résultat</div>';
+        } else {
+            produits.forEach(pr => {
+                const d = document.createElement('div');
+                d.className = 'px-4 py-2.5 hover:bg-blue-50 cursor-pointer flex justify-between items-center text-sm transition-colors';
+                const label = pr.aPeser ? `${Number(pr.prix).toFixed(2)} €/kg` : `${Number(pr.prix).toFixed(2)} €/${pr.unite}`;
+                const badge = pr.aPeser ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600';
+                d.innerHTML = `<div><span class="font-medium text-gray-700">${pr.nom}</span>${pr.categorie ? '<span class="ml-2 text-xs text-gray-400">' + pr.categorie + '</span>' : ''}${pr.aPeser ? ' <span class="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-px rounded-full">À peser</span>' : ''}</div><span class="text-xs font-semibold ${badge} px-2 py-0.5 rounded-full">${label}</span>`;
+                d.onclick = () => {
+                    selectedProduit = pr;
+                    si.value = pr.nom;
+                    rd.style.display = 'none';
+                    document.getElementById('btnAjouterProduit').disabled = false;
+                    // Adapter le label du champ quantité
+                    const qteInput = document.getElementById('searchQte');
+                    if (pr.aPeser) {
+                        qteInput.placeholder = 'kg';
+                        qteInput.value = '';
+                        qteInput.step = '0.01';
+                        qteInput.min = '0';
+                    } else {
+                        qteInput.placeholder = '';
+                        qteInput.value = '1';
+                        qteInput.step = '0.5';
+                        qteInput.min = '0.5';
+                    }
+                };
+                rd.appendChild(d);
+            });
+        }
+        rd.style.display = 'block';
+    }, 200);
+});
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('#searchProduit') && !e.target.closest('#autocompleteResults'))
+        rd.style.display = 'none';
+});
+
+// ===== AJOUTER PRODUIT =====
+document.getElementById('btnAjouterProduit').addEventListener('click', () => {
+    if (!selectedProduit) return;
+    const qte = parseFloat(document.getElementById('searchQte').value) || 0;
+
+    if (selectedProduit.aPeser) {
+        // Produit à peser : poids saisi (ou 0 si pas encore pesé)
+        lignes.push({
+            produitCode: selectedProduit.code,
+            produitNom: selectedProduit.nom,
+            prixUnitaire: parseFloat(selectedProduit.prix),
+            quantite: qte,  // = poids en kg (0 = pas encore pesé)
+            unite: 'kg',
+            aPeser: true,
+            montantPese: qte > 0 ? Math.round(qte * parseFloat(selectedProduit.prix) * 100) / 100 : 0,
+            commentaire: ''
+        });
+    } else {
+        // Produit normal : incrémenter si déjà présent
+        const ex = lignes.find(l => l.produitCode === selectedProduit.code);
+        if (ex) {
+            ex.quantite += (qte || 1);
+        } else {
+            lignes.push({
+                produitCode: selectedProduit.code,
+                produitNom: selectedProduit.nom,
+                prixUnitaire: parseFloat(selectedProduit.prix),
+                quantite: qte || 1,
+                unite: selectedProduit.unite || 'pièce',
+                aPeser: false,
+                montantPese: 0,
+                commentaire: ''
+            });
+        }
+    }
+
+    selectedProduit = null;
+    si.value = '';
+    document.getElementById('searchQte').value = 1;
+    document.getElementById('searchQte').step = '0.5';
+    document.getElementById('searchQte').min = '0.5';
+    document.getElementById('searchQte').placeholder = '';
+    document.getElementById('btnAjouterProduit').disabled = true;
+    renderLignes();
+    si.focus();
+});
+
+si.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        if (selectedProduit) document.getElementById('btnAjouterProduit').click();
+    }
+});
+
+// ===== RENDU DU PANIER =====
+function renderLignes() {
+    const tbody = document.getElementById('lignesBody');
+    tbody.innerHTML = '';
+    let total = 0;
+
+    lignes.forEach((l, i) => {
+        let montant, montantDisplay;
+
+        if (l.aPeser) {
+            if (l.quantite > 0) {
+                // Poids saisi : calculer le montant
+                l.montantPese = Math.round(l.quantite * l.prixUnitaire * 100) / 100;
+                montant = l.montantPese;
+                montantDisplay = `<span class="font-semibold text-gray-800">${montant.toFixed(2)} €</span>`;
+            } else {
+                // Pas encore pesé
+                montant = 0;
+                montantDisplay = `<span class="text-amber-500 font-medium text-xs">À peser</span>`;
+            }
+        } else {
+            montant = l.quantite * l.prixUnitaire;
+            montantDisplay = `<span class="font-semibold text-gray-800">${montant.toFixed(2)} €</span>`;
+        }
+
+        total += montant;
+        const tr = document.createElement('tr');
+        tr.className = 'group hover:bg-gray-50/50';
+
+        if (l.aPeser) {
+            // Ligne "à peser" : champ poids en kg
+            tr.innerHTML = `
+                <td class="py-3 px-5 text-gray-700">
+                    ${l.produitNom}
+                    <span class="ml-1 text-[10px] font-medium bg-amber-100 text-amber-700 px-1.5 py-px rounded-full">À peser</span>
+                </td>
+                <td class="py-3 px-3 text-center">
+                    <div class="flex items-center justify-center gap-1">
+                        <input type="number" class="w-20 text-center rounded-lg border border-amber-300 bg-amber-50 py-1.5 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30"
+                               value="${l.quantite || ''}" min="0" step="0.01" placeholder="0.00"
+                               onchange="updatePoids(${i}, this.value)">
+                        <span class="text-xs text-gray-400">kg</span>
+                    </div>
+                </td>
+                <td class="py-3 px-3 text-right text-gray-500">${l.prixUnitaire.toFixed(2)} €/kg</td>
+                <td class="py-3 px-3 text-right">${montantDisplay}</td>
+                <td class="py-3 px-3 text-center">
+                    <button type="button" onclick="removeLigne(${i})" class="w-7 h-7 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 inline-flex items-center justify-center transition-colors"><i class="fas fa-times text-xs"></i></button>
+                </td>`;
+        } else {
+            // Ligne normale
+            tr.innerHTML = `
+                <td class="py-3 px-5 text-gray-700">
+                    ${l.produitNom}
+                    ${l.unite !== 'pièce' ? ' <span class="text-xs text-gray-400">(' + l.unite + ')</span>' : ''}
+                </td>
+                <td class="py-3 px-3 text-center">
+                    <input type="number" class="w-16 text-center rounded-lg border border-gray-200 py-1.5 text-sm outline-none focus:border-blue-400"
+                           value="${l.quantite}" min="0.5" step="0.5"
+                           onchange="updateQte(${i}, this.value)">
+                </td>
+                <td class="py-3 px-3 text-right text-gray-500">${l.prixUnitaire.toFixed(2)} €</td>
+                <td class="py-3 px-3 text-right">${montantDisplay}</td>
+                <td class="py-3 px-3 text-center">
+                    <button type="button" onclick="removeLigne(${i})" class="w-7 h-7 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 inline-flex items-center justify-center transition-colors"><i class="fas fa-times text-xs"></i></button>
+                </td>`;
+        }
+
+        tbody.appendChild(tr);
+    });
+
+    if (!lignes.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-300"><i class="fas fa-shopping-basket text-2xl mb-2 block"></i><span class="text-sm">Panier vide</span></td></tr>';
+    }
+
+    const fmt = total.toFixed(2).replace('.', ',') + ' €';
+    document.getElementById('totalLabel').textContent = fmt;
+    document.getElementById('totalFooter').textContent = fmt;
+    document.getElementById('lignesJson').value = JSON.stringify(lignes);
+    updateRecap(total);
+}
+
+function updateQte(i, v) {
+    const q = parseFloat(v);
+    if (q <= 0) lignes.splice(i, 1);
+    else lignes[i].quantite = q;
+    renderLignes();
+}
+
+function updatePoids(i, v) {
+    const poids = parseFloat(v) || 0;
+    lignes[i].quantite = poids;
+    if (poids > 0) {
+        lignes[i].montantPese = Math.round(poids * lignes[i].prixUnitaire * 100) / 100;
+    } else {
+        lignes[i].montantPese = 0;
+    }
+    renderLignes();
+}
+
+function removeLigne(i) {
+    lignes.splice(i, 1);
+    renderLignes();
+}
+
+// ===== RECAP =====
+function updateRecap(total) {
+    const panel = document.getElementById('recapPanel');
+    if (!lignes.length) {
+        panel.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Ajoutez des produits</p>';
+        return;
+    }
+
+    let html = '<div class="space-y-2 mb-4">';
+    lignes.forEach(l => {
+        if (l.aPeser) {
+            if (l.quantite > 0) {
+                html += `<div class="flex justify-between text-sm"><span class="text-gray-600">${l.quantite} kg × ${l.produitNom}</span><span class="font-medium text-gray-800">${l.montantPese.toFixed(2)} €</span></div>`;
+            } else {
+                html += `<div class="flex justify-between text-sm"><span class="text-gray-600">${l.produitNom}</span><span class="text-amber-500 font-medium">À peser</span></div>`;
+            }
+        } else {
+            const m = l.quantite * l.prixUnitaire;
+            html += `<div class="flex justify-between text-sm"><span class="text-gray-600">${l.quantite}× ${l.produitNom}</span><span class="font-medium text-gray-800">${m.toFixed(2)} €</span></div>`;
+        }
+    });
+    html += '</div>';
+    html += `<div class="border-t border-gray-200 pt-3 flex justify-between text-base"><span class="font-semibold text-[#1c2434]">Total</span><span class="font-bold text-[#1c2434]">${total.toFixed(2)} €</span></div>`;
+
+    // Avertissement si des produits ne sont pas pesés
+    const nonPeses = lignes.filter(l => l.aPeser && l.quantite <= 0);
+    if (nonPeses.length > 0) {
+        html += `<div class="mt-2 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2"><i class="fas fa-exclamation-triangle mr-1"></i> ${nonPeses.length} produit(s) non pesé(s) — total provisoire</div>`;
+    }
+
+    const acompte = parseFloat(document.querySelector('[name="acompte"]').value) || 0;
+    if (acompte > 0) {
+        html += `<div class="flex justify-between text-sm text-gray-500 mt-2"><span>Acompte</span><span>-${acompte.toFixed(2)} €</span></div>`;
+        html += `<div class="flex justify-between text-sm font-semibold text-red-500 mt-1"><span>Reste</span><span>${(total - acompte).toFixed(2)} €</span></div>`;
+    }
+
+    panel.innerHTML = html;
+}
+
+document.querySelector('[name="acompte"]')?.addEventListener('input', () => {
+    const t = lignes.reduce((s, l) => {
+        if (l.aPeser) return s + (l.montantPese || 0);
+        return s + l.quantite * l.prixUnitaire;
+    }, 0);
+    updateRecap(t);
+});
+
+document.getElementById('commandeForm').addEventListener('submit', function(e) {
+    if (!lignes.length) { e.preventDefault(); alert('Ajoutez au moins un produit.'); }
+});
+</script>
+{% endblock %}

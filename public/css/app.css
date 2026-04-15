@@ -1,0 +1,5 @@
+/* Bougerolle — Tailwind overrides */
+@media print {
+    aside, header, .flash-msg { display: none !important; }
+    main { margin: 0 !important; padding: 0 !important; }
+}

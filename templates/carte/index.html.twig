@@ -1,0 +1,71 @@
+{% extends 'base.html.twig' %}
+{% block title %}Gestion des cartes{% endblock %}
+{% block page_title %}Gestion des cartes{% endblock %}
+{% block page_actions %}<button onclick="showModal('createModal')" class="inline-flex items-center gap-2 rounded-lg bg-blue-500 hover:bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors"><i class="fas fa-plus text-[11px]"></i> Nouvelle carte</button>{% endblock %}
+
+{% block body %}
+<p class="text-sm text-gray-500 mb-6">Les cartes permettent de gérer plusieurs événements (Noël, Pâques…) avec leurs propres produits et commandes.</p>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+    {% for c in cartes %}
+    <div class="rounded-2xl border border-gray-200 bg-white hover:shadow-md transition-shadow">
+        <div class="p-5">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center flex-shrink-0"><i class="fas fa-bookmark text-blue-500 text-sm"></i></div>
+                <div><h3 class="font-semibold text-[#1c2434]">{{ c.nom }}</h3><p class="text-xs text-gray-400">Créée le {{ c.createdAt|date('d/m/Y') }}</p></div>
+            </div>
+            <div class="flex gap-4 text-sm text-gray-500 mb-5">
+                <span><span class="font-semibold text-[#1c2434]">{{ c.categories|length }}</span> catégories</span>
+                <span><span class="font-semibold text-[#1c2434]">{{ c.produits|length }}</span> produits</span>
+                <span><span class="font-semibold text-[#1c2434]">{{ c.commandes|length }}</span> commandes</span>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+                <a href="{{ path('app_commande_index', {carteId: c.id}) }}" class="inline-flex items-center gap-1.5 rounded-lg bg-blue-500 hover:bg-blue-600 px-3.5 py-2 text-xs font-medium text-white transition-colors"><i class="fas fa-clipboard-list text-[10px]"></i> Commandes</a>
+                <button onclick="renommerCarte({{ c.id }}, {{ c.nom|json_encode }})" class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 text-gray-400 hover:text-blue-500 hover:border-blue-200 transition-colors" title="Renommer"><i class="fas fa-pencil-alt text-xs"></i></button>
+                <button onclick="dupliquerCarte({{ c.id }}, {{ c.nom|json_encode }})" class="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs text-gray-500 hover:text-blue-500 hover:border-blue-200 transition-colors"><i class="fas fa-copy text-[10px]"></i> Dupliquer</button>
+                {% if cartes|length > 1 %}<form method="post" action="{{ path('app_carte_supprimer', {id: c.id}) }}" class="inline" onsubmit="return confirm('Supprimer « {{ c.nom|e('js') }} » et TOUTES ses données ?')"><button class="inline-flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 text-gray-400 hover:text-red-500 hover:border-red-200 transition-colors"><i class="fas fa-trash text-xs"></i></button></form>{% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-span-full rounded-2xl border-2 border-dashed border-gray-200 bg-white p-10 text-center">
+        <i class="fas fa-layer-group text-4xl text-gray-200 mb-3 block"></i>
+        <p class="text-gray-500 mb-2">Aucune carte</p>
+        <p class="text-sm text-gray-400">Créez-en une ou <a href="{{ path('app_backup_index') }}" class="text-blue-500 hover:underline">importez une sauvegarde</a>.</p>
+    </div>
+    {% endfor %}
+</div>
+
+{# Create Modal #}
+<div id="createModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/50" onclick="if(event.target===this)hideModal('createModal')">
+<form method="post" action="{{ path('app_carte_creer') }}" class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4">
+    <div class="px-6 py-4 border-b border-gray-100"><h3 class="font-semibold text-[#1c2434]">Nouvelle carte</h3></div>
+    <div class="p-6"><label class="block text-sm font-medium text-gray-600 mb-1.5">Nom *</label><input type="text" name="nom" required placeholder="Ex: NOEL-2026" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 placeholder-gray-400"></div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3"><button type="button" onclick="hideModal('createModal')" class="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Annuler</button><button type="submit" class="rounded-lg bg-blue-500 hover:bg-blue-600 px-5 py-2 text-sm font-medium text-white">Créer</button></div>
+</form></div>
+
+{# Rename Modal #}
+<div id="renameModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/50" onclick="if(event.target===this)hideModal('renameModal')">
+<form id="renameForm" method="post" class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4">
+    <div class="px-6 py-4 border-b border-gray-100"><h3 class="font-semibold text-[#1c2434]">Renommer</h3></div>
+    <div class="p-6"><label class="block text-sm font-medium text-gray-600 mb-1.5">Nouveau nom *</label><input type="text" name="nom" id="renameNom" required class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"></div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3"><button type="button" onclick="hideModal('renameModal')" class="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Annuler</button><button type="submit" class="rounded-lg bg-blue-500 hover:bg-blue-600 px-5 py-2 text-sm font-medium text-white">Renommer</button></div>
+</form></div>
+
+{# Dupe Modal #}
+<div id="dupeModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/50" onclick="if(event.target===this)hideModal('dupeModal')">
+<form id="dupeForm" method="post" class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4">
+    <div class="px-6 py-4 border-b border-gray-100"><h3 class="font-semibold text-[#1c2434]">Dupliquer</h3></div>
+    <div class="p-6"><p class="text-xs text-gray-400 mb-3">Catégories et produits copiés. Commandes non dupliquées.</p><label class="block text-sm font-medium text-gray-600 mb-1.5">Nom de la copie *</label><input type="text" name="nom" id="dupeNom" required class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"></div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3"><button type="button" onclick="hideModal('dupeModal')" class="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Annuler</button><button type="submit" class="rounded-lg bg-green-500 hover:bg-green-600 px-5 py-2 text-sm font-medium text-white">Dupliquer</button></div>
+</form></div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function showModal(id){const m=document.getElementById(id);m.classList.remove('hidden');m.classList.add('flex');}
+function hideModal(id){const m=document.getElementById(id);m.classList.add('hidden');m.classList.remove('flex');}
+function renommerCarte(id,nom){document.getElementById('renameForm').action=`/carte/${id}/renommer`;document.getElementById('renameNom').value=nom;showModal('renameModal');}
+function dupliquerCarte(id,nom){document.getElementById('dupeForm').action=`/carte/${id}/dupliquer`;document.getElementById('dupeNom').value=nom+'-COPIE';showModal('dupeModal');}
+</script>
+{% endblock %}

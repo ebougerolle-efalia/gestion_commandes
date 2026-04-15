@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+{% block title %}Catégories — {{ carte.nom }}{% endblock %}
+{% block page_title %}Catégories <span class="ml-2 text-sm font-normal text-gray-400">({{ categories|length }})</span>{% endblock %}
+{% block page_actions %}<button onclick="showModal('addModal')" class="inline-flex items-center gap-2 rounded-lg bg-blue-500 hover:bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition-colors"><i class="fas fa-plus text-[11px]"></i> Ajouter</button>{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl">
+    <div class="rounded-2xl border border-gray-200 bg-white">
+        <div class="px-5 py-4 border-b border-gray-100"><h3 class="font-semibold text-[15px] text-[#1c2434]">Catégories — {{ carte.nom }}</h3></div>
+        <ul id="categoriesList" class="divide-y divide-gray-50">
+            {% for cat in categories %}
+            <li class="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50/50 transition-colors group" draggable="true" data-id="{{ cat.id }}">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-grip-vertical text-gray-300 cursor-grab group-hover:text-gray-400 text-xs"></i>
+                    <span class="font-medium text-sm text-gray-700">{{ cat.nom }}</span>
+                    <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600">{{ cat.produits|length }} produits</span>
+                </div>
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="editCat({{ cat.id }}, {{ cat.nom|json_encode }}, {{ cat.ordre }})" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50"><i class="fas fa-pencil-alt text-xs"></i></button>
+                    <form method="post" action="{{ path('app_categorie_delete', {carteId: carte.id, id: cat.id}) }}" class="inline" onsubmit="return confirm('Supprimer ?')"><button class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50"><i class="fas fa-trash text-xs"></i></button></form>
+                </div>
+            </li>
+            {% else %}<li class="py-10 text-center text-sm text-gray-400">Aucune catégorie.</li>{% endfor %}
+        </ul>
+        <div class="px-5 py-3 border-t border-gray-100 text-xs text-gray-400"><i class="fas fa-info-circle mr-1"></i>Glissez-déposez pour réordonner.</div>
+    </div>
+</div>
+
+{# Add Modal #}
+<div id="addModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/50" onclick="if(event.target===this)hideModal('addModal')">
+<form method="post" action="{{ path('app_categorie_add', {carteId: carte.id}) }}" class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4">
+    <div class="px-6 py-4 border-b border-gray-100"><h3 class="font-semibold text-[#1c2434]">Nouvelle catégorie</h3></div>
+    <div class="p-6 space-y-4">
+        <div><label class="block text-sm font-medium text-gray-600 mb-1.5">Nom *</label><input type="text" name="nom" required class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"></div>
+        <div><label class="block text-sm font-medium text-gray-600 mb-1.5">Ordre</label><input type="number" name="ordre" value="{{ categories|length }}" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"></div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3"><button type="button" onclick="hideModal('addModal')" class="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Annuler</button><button type="submit" class="rounded-lg bg-blue-500 hover:bg-blue-600 px-5 py-2 text-sm font-medium text-white">Ajouter</button></div>
+</form></div>
+
+{# Edit Modal #}
+<div id="editModal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/50" onclick="if(event.target===this)hideModal('editModal')">
+<form id="editForm" method="post" class="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-4">
+    <div class="px-6 py-4 border-b border-gray-100"><h3 class="font-semibold text-[#1c2434]">Modifier</h3></div>
+    <div class="p-6 space-y-4">
+        <div><label class="block text-sm font-medium text-gray-600 mb-1.5">Nom *</label><input type="text" name="nom" id="editNom" required class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"></div>
+        <div><label class="block text-sm font-medium text-gray-600 mb-1.5">Ordre</label><input type="number" name="ordre" id="editOrdre" class="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"></div>
+    </div>
+    <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3"><button type="button" onclick="hideModal('editModal')" class="rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">Annuler</button><button type="submit" class="rounded-lg bg-blue-500 hover:bg-blue-600 px-5 py-2 text-sm font-medium text-white">Enregistrer</button></div>
+</form></div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+function showModal(id){const m=document.getElementById(id);m.classList.remove('hidden');m.classList.add('flex');}
+function hideModal(id){const m=document.getElementById(id);m.classList.add('hidden');m.classList.remove('flex');}
+function editCat(id,nom,ordre){document.getElementById('editForm').action=`/categories/{{ carte.id }}/modifier/${id}`;document.getElementById('editNom').value=nom;document.getElementById('editOrdre').value=ordre;showModal('editModal');}
+// Drag & drop
+const list=document.getElementById('categoriesList');let drag=null;
+list?.querySelectorAll('[draggable]').forEach(item=>{
+    item.addEventListener('dragstart',()=>{drag=item;item.style.opacity='.4';});
+    item.addEventListener('dragend',()=>{drag=null;item.style.opacity='1';});
+    item.addEventListener('dragover',e=>e.preventDefault());
+    item.addEventListener('drop',e=>{e.preventDefault();if(drag&&drag!==item){const items=[...list.children];if(items.indexOf(drag)<items.indexOf(item))item.after(drag);else item.before(drag);const ordres=[...list.querySelectorAll('[draggable]')].map((el,i)=>({id:+el.dataset.id,ordre:i}));fetch(`/categories/{{ carte.id }}/reorder`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ordres})});}});
+});
+</script>
+{% endblock %}

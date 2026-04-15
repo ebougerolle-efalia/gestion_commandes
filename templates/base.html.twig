@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bougerolle — Commandes{% endblock %}</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* TailAdmin sidebar */
+        .sidebar { background: #1c2434; scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+        .sidebar-link { color: #8a99af; transition: all .15s ease; }
+        .sidebar-link:hover { color: #dee4ee; background: rgba(255,255,255,.05); }
+        .sidebar-link.active { color: #ffffff; background: rgba(59,130,246,.15); }
+        .sidebar-link.active .sidebar-icon { color: #3b82f6; }
+        /* Expandable row */
+        .detail-row { animation: fadeSlide .2s ease; }
+        @keyframes fadeSlide { from { opacity:0; transform:translateY(-6px) } to { opacity:1; transform:translateY(0) } }
+        .chevron-icon { transition: transform .2s ease; }
+        .chevron-icon.open { transform: rotate(90deg); }
+        /* Custom scrollbar body */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+    {% block stylesheets %}{% endblock %}
+</head>
+<body class="h-full bg-[#f1f5f9]">
+
+<div class="flex h-full overflow-hidden">
+    {# ===== SIDEBAR ===== #}
+    <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-50 w-[280px] flex flex-col overflow-y-auto transition-transform duration-300 lg:translate-x-0 -translate-x-full">
+        {# Logo #}
+        <a href="{{ path('app_home') }}" class="flex items-center gap-3 px-7 py-6 border-b border-white/[.06]">
+            <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-store text-blue-400 text-sm"></i>
+            </div>
+            <span class="text-xl text-white font-semibold tracking-tight">Bougerolle</span>
+        </a>
+
+        <nav class="flex-1 py-5 px-4">
+            {% if carte is defined and carte %}
+            <p class="px-4 mb-3 text-[11px] font-semibold uppercase tracking-[.08em] text-gray-500">Carte : {{ carte.nom }}</p>
+            <ul class="space-y-0.5 mb-6">
+                <li><a href="{{ path('app_commande_index', {carteId: carte.id}) }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') == 'app_commande_index' ? 'active' }}"><i class="sidebar-icon fas fa-clipboard-list w-5 text-center text-[13px]"></i>Commandes</a></li>
+                <li><a href="{{ path('app_commande_new', {carteId: carte.id}) }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') == 'app_commande_new' or app.request.get('_route') == 'app_commande_edit' ? 'active' }}"><i class="sidebar-icon fas fa-cart-plus w-5 text-center text-[13px]"></i>Saisie commande</a></li>
+                <li><a href="{{ path('app_produit_index', {carteId: carte.id}) }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_produit' ? 'active' }}"><i class="sidebar-icon fas fa-box-open w-5 text-center text-[13px]"></i>Produits</a></li>
+                <li><a href="{{ path('app_categorie_index', {carteId: carte.id}) }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_categorie' ? 'active' }}"><i class="sidebar-icon fas fa-tags w-5 text-center text-[13px]"></i>Catégories</a></li>
+                <li><a href="{{ path('app_statistique_index', {carteId: carte.id}) }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_statistique' ? 'active' }}"><i class="sidebar-icon fas fa-chart-pie w-5 text-center text-[13px]"></i>Statistiques</a></li>
+                <li><a href="{{ path('app_commande_etiquettes', {carteId: carte.id}) }}" target="_blank" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px]"><i class="sidebar-icon fas fa-print w-5 text-center text-[13px]"></i>Étiquettes</a></li>
+            </ul>
+            {% endif %}
+
+            <p class="px-4 mb-3 text-[11px] font-semibold uppercase tracking-[.08em] text-gray-500">Administration</p>
+            <ul class="space-y-0.5">
+                <li><a href="{{ path('app_carte_index') }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_carte' ? 'active' }}"><i class="sidebar-icon fas fa-layer-group w-5 text-center text-[13px]"></i>Gestion des cartes</a></li>
+                <li><a href="{{ path('app_backup_index') }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_backup' ? 'active' }}"><i class="sidebar-icon fas fa-database w-5 text-center text-[13px]"></i>Sauvegarde</a></li>
+            </ul>
+        </nav>
+
+        <div class="border-t border-white/[.06] px-7 py-4">
+            <p class="text-[12px] text-gray-500">Pierrick Bougerolle</p>
+            <p class="text-[11px] text-gray-600">Charcutier-Traiteur</p>
+        </div>
+    </aside>
+
+    {# ===== MAIN ===== #}
+    <div class="flex-1 flex flex-col lg:ml-[280px] h-full overflow-hidden">
+        {# Header #}
+        <header class="flex-shrink-0 z-40 bg-white border-b border-gray-200/80 px-4 lg:px-8 min-h-[72px] h-[72px] flex items-center justify-between shadow-sm overflow-hidden">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
+                    <i class="fas fa-bars text-sm"></i>
+                </button>
+                <div>
+                    <h1 class="text-lg font-semibold text-[#1c2434] leading-tight">{% block page_title %}{% endblock %}</h1>
+                    <p class="text-xs text-gray-400 leading-tight h-4">{% block page_subtitle %}{% if carte is defined and carte %}{{ carte.nom }}{% endif %}{% endblock %}&nbsp;</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if cartes is defined and cartes|length > 1 and carte is defined %}
+                <select class="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-gray-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                        onchange="window.location.href=this.value">
+                    {% for c in cartes %}
+                    <option value="{{ path('app_commande_index', {carteId: c.id}) }}" {{ carte.id == c.id ? 'selected' }}>{{ c.nom }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+                {% block page_actions %}{% endblock %}
+            </div>
+        </header>
+
+        {# Content - scrollable #}
+        <main class="flex-1 overflow-y-auto p-4 lg:p-7">
+            {% for type, messages in app.flashes %}
+                {% for message in messages %}
+                <div class="mb-4 flex items-center gap-3 rounded-xl px-5 py-3.5 text-sm border
+                    {{ type == 'success' ? 'bg-green-50 text-green-700 border-green-200' : '' }}
+                    {{ type == 'danger' ? 'bg-red-50 text-red-700 border-red-200' : '' }}
+                    {{ type == 'warning' ? 'bg-amber-50 text-amber-700 border-amber-200' : '' }} flash-msg">
+                    <i class="fas fa-{{ type == 'success' ? 'check-circle' : (type == 'danger' ? 'times-circle' : 'exclamation-triangle') }} text-[15px]"></i>
+                    <span class="flex-1">{{ message }}</span>
+                    <button onclick="this.closest('.flash-msg').remove()" class="opacity-40 hover:opacity-100 text-lg leading-none">&times;</button>
+                </div>
+                {% endfor %}
+            {% endfor %}
+            {% block body %}{% endblock %}
+        </main>
+    </div>
+</div>
+
+{# Sidebar overlay mobile #}
+<div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+
+<script>
+function toggleSidebar() {
+    const sb = document.getElementById('sidebar'), ov = document.getElementById('sidebarOverlay');
+    sb.classList.toggle('-translate-x-full');
+    ov.classList.toggle('hidden');
+}
+setTimeout(() => document.querySelectorAll('.flash-msg').forEach(el => { el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),300); }), 4000);
+</script>
+{% block javascripts %}{% endblock %}
+</body>
+</html>
