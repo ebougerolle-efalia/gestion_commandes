@@ -81,15 +81,18 @@ systemctl restart nginx
 systemctl enable php*-fpm 2>/dev/null || true
 systemctl restart php*-fpm 2>/dev/null || true
 
-if [ ! -d "${APP_DIR}" ]; then
+# --- Projet : clone si nécessaire --------------------------------------------
+if [ ! -d "${APP_DIR}/.git" ]; then
   log "Clonage du dépôt dans ${APP_DIR}..."
+  mkdir -p "$(dirname "${APP_DIR}")"
   git clone "${REPO_URL}" "${APP_DIR}"
 else
-  log "Le dossier ${APP_DIR} existe déjà, clonage ignoré."
+  log "Le dépôt Git existe déjà dans ${APP_DIR}, clonage ignoré."
 fi
 
 cd "${APP_DIR}"
 
+# --- deploy.sh ----------------------------------------------------------------
 if [ -f "deploy.sh" ]; then
   chmod +x deploy.sh
 elif [ -f "deploy-2.sh" ]; then
@@ -100,6 +103,7 @@ else
   warn "Aucun deploy.sh trouvé dans le projet."
 fi
 
+# --- .env.local --------------------------------------------------------------
 if [ ! -f ".env.local" ]; then
   log "Création du fichier .env.local..."
   APP_SECRET="$(openssl rand -hex 16)"
@@ -122,12 +126,14 @@ else
   log ".env.local déjà présent, création ignorée."
 fi
 
+# --- Dossiers applicatifs -----------------------------------------------------
 log "Création des dossiers applicatifs..."
 mkdir -p var/cache var/log var/data var/backups
 touch "${DB_PATH}" 2>/dev/null || true
 chown -R ${WEB_USER}:${WEB_USER} var || true
 chmod -R 775 var
 
+# --- Nginx --------------------------------------------------------------------
 log "Configuration Nginx..."
 cat > /etc/nginx/sites-available/${NGINX_SITE} <<EOF
 server {
@@ -175,6 +181,14 @@ rm -f /etc/nginx/sites-enabled/default
 nginx -t
 systemctl reload nginx
 
+# --- sudoers pour webhook -----------------------------------------------------
+log "Configuration sudoers pour le webhook..."
+cat > /etc/sudoers.d/gestion_commandes <<EOF
+www-data ALL=(root) NOPASSWD: ${APP_DIR}/deploy.sh
+EOF
+chmod 440 /etc/sudoers.d/gestion_commandes
+
+# --- Déploiement applicatif ---------------------------------------------------
 if [ -f "./deploy.sh" ]; then
   log "Lancement du déploiement applicatif..."
   ./deploy.sh || warn "Le déploiement a échoué. Vérifie le contenu de deploy.sh."
@@ -182,12 +196,7 @@ else
   warn "deploy.sh absent, déploiement non lancé."
 fi
 
-log "Configuration sudoers pour le webhook PHP/Nginx..."
-cat > /etc/sudoers.d/gestion_commandes <<EOF
-www-data ALL=(root) NOPASSWD: ${APP_DIR}/deploy.sh
-EOF
-chmod 440 /etc/sudoers.d/gestion_commandes
-
+# --- Certbot ------------------------------------------------------------------
 log "Génération du certificat Let's Encrypt..."
 if certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email --redirect; then
   log "Certificat SSL installé avec succès."
@@ -200,7 +209,6 @@ log "============================================"
 log " SERVEUR CONFIGURÉ"
 log " Domaine       : https://${DOMAIN}"
 log " Application   : ${APP_DIR}"
-log " Dépôt         : ${REPO_URL}"
 log " Base SQLite   : ${DB_PATH}"
 log " Socket PHP    : ${PHP_FPM_SOCK}"
 log ""
