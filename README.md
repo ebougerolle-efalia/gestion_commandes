@@ -1,6 +1,10 @@
-# Bougerolle — Gestion des Commandes
+# Gestion des Commandes — Pierrick Bougerolle
 
 Application de gestion des commandes pour **Pierrick Bougerolle, Charcutier-Traiteur**.
+
+- **Dépôt** : https://github.com/ebougerolle-efalia/gestion_commandes
+- **Branche** : `master`
+- **Production** : https://gestion-commandes.bougerolle.ovh
 
 ## Technologies
 
@@ -8,25 +12,19 @@ Application de gestion des commandes pour **Pierrick Bougerolle, Charcutier-Trai
 - **Base de données** : SQLite
 - **Frontend** : Twig + Tailwind CSS v4 (CDN) + JavaScript vanilla
 - **Design** : inspiré TailAdmin — sidebar sombre, cards arrondies, DataTables
-- **Icônes** : Font Awesome 6
-- **Police** : Inter (Google Fonts)
+- **Icônes** : Font Awesome 6 · **Police** : Inter (Google Fonts)
 - **Pas de dépendance npm** — tout vient de CDN
 
-## Installation
+## Installation locale (développement)
 
 ```bash
-# Cloner le projet
-git clone <url> gestion_commandes
+git clone https://github.com/ebougerolle-efalia/gestion_commandes.git
 cd gestion_commandes
 
-# Installer les dépendances PHP
 composer install
 
-# Créer le schéma de la base SQLite
-# (pas besoin de doctrine:database:create — SQLite crée le fichier automatiquement)
 php bin/console doctrine:schema:create
 
-# Lancer le serveur de dev
 php -S localhost:8080 -t public/
 ```
 
@@ -45,7 +43,7 @@ Les backups JSON sont **compatibles** avec l'ancienne version Node.js (format v2
 gestion_commandes/
 ├── bin/console                 # Console Symfony
 ├── deploy.sh                   # Script de déploiement (install + update)
-├── setup-server.sh             # Configuration serveur Debian/Ubuntu
+├── setup-server.sh             # Configuration serveur Debian/Ubuntu + HTTPS
 ├── .env                        # Variables par défaut
 ├── .env.local.example          # Modèle pour la production
 ├── config/
@@ -65,10 +63,10 @@ gestion_commandes/
 │   ├── Controller/
 │   │   ├── CommandeController.php    # CRUD commandes + impression + production + poids
 │   │   ├── ProduitController.php     # CRUD produits + API autocomplétion
-│   │   ├── CategorieController.php   # CRUD catégories + drag & drop + réordonnancement
+│   │   ├── CategorieController.php   # CRUD catégories + drag & drop
 │   │   ├── CarteController.php       # Gestion cartes + duplication + renommage
-│   │   ├── StatistiqueController.php # KPI + décompte produits + stats par date
-│   │   └── BackupController.php      # Export/import JSON complet
+│   │   ├── StatistiqueController.php # KPI + décompte + stats par date
+│   │   └── BackupController.php      # Export/import JSON
 │   ├── Entity/
 │   │   ├── Carte.php
 │   │   ├── Categorie.php
@@ -85,83 +83,53 @@ gestion_commandes/
 │       ├── BackupService.php         # Export/import SQL direct
 │       └── CarteService.php          # Duplication de carte
 ├── templates/
-│   ├── base.html.twig                # Layout TailAdmin (sidebar + header + content scrollable)
-│   ├── carte/index.html.twig         # Gestion des cartes (créer, renommer, dupliquer, supprimer)
+│   ├── base.html.twig                # Layout TailAdmin (sidebar + header + scroll)
+│   ├── carte/index.html.twig
 │   ├── commande/
-│   │   ├── index.html.twig           # Liste avec DataTable (pagination, recherche, per-page)
+│   │   ├── index.html.twig           # Liste DataTable (pagination, recherche, per-page)
 │   │   ├── form.html.twig            # Saisie commande (autocomplétion, panier, poids)
 │   │   ├── print.html.twig           # Fiche client imprimable A4
 │   │   └── etiquettes.html.twig      # Étiquettes 105×37mm avec calibration
-│   ├── produit/index.html.twig       # Catalogue avec DataTable
-│   ├── categorie/index.html.twig     # Catégories avec drag & drop
+│   ├── produit/index.html.twig       # Catalogue DataTable
+│   ├── categorie/index.html.twig     # Catégories drag & drop
 │   ├── statistique/index.html.twig   # KPI + décompte + indicateurs
 │   └── backup/index.html.twig        # Sauvegarde / restauration
 ├── var/data/                          # Base SQLite (créée automatiquement)
-├── .env                               # DATABASE_URL
 └── composer.json
 ```
 
 ## Fonctionnalités
 
 ### Interface
-
-- Design moderne inspiré **TailAdmin** — sidebar sombre (#1c2434), cards blanches arrondies, typographie Inter
-- **Responsive** : sidebar escamotable sur mobile, layout adaptatif
-- Header fixe avec sélecteur de carte, contenu scrollable indépendamment
-- Flash messages auto-dismissibles
+- Design moderne inspiré **TailAdmin** — sidebar sombre (#1c2434), cards blanches arrondies
+- Responsive : sidebar escamotable sur mobile
+- Header fixe, contenu scrollable indépendamment
 
 ### Commandes
-
-- **DataTable** : pagination, sélecteur de lignes par page (5/10/15/25/50), recherche temps réel
-- **Lignes dépliables** : clic sur une commande pour voir le détail des produits, quantités, prix, montants
-- Création/modification avec **autocomplétion** des produits
-- Numérotation automatique (CARTE-001, CARTE-002…)
-- Numéros de devis conformes loi française (D-2026-0001…)
-- Gestion des acomptes et reste à payer (badge "Soldé" en vert ou montant en rouge)
-- Date et créneau de retrait
-- Commentaires par commande et par ligne de produit
-- **Suivi de production** : boutons ronds vert ✓ / gris ○ cliquables (AJAX), compteur dans la ligne principale (3/5)
-- **Produits à peser** : saisie du poids en kg dans le formulaire OU directement depuis le détail de la commande (AJAX), calcul automatique du montant = poids × prix/kg
+- **DataTable** : pagination, sélecteur par page (5/10/15/25/50), recherche temps réel
+- **Lignes dépliables** : détail produits, quantités, prix, montants
+- Autocomplétion produits, numérotation automatique, devis conformes (D-AAAA-XXXX)
+- Acomptes, reste à payer, date/créneau de retrait, commentaires
+- **Suivi de production** : boutons cliquables AJAX, compteur dans la ligne principale
+- **Produits à peser** : saisie du poids en kg (formulaire ou détail commande), calcul = poids × prix/kg
 
 ### Impression
-
-- **Fiche client** : récapitulatif complet formaté A4, numéro en gros, tableau des produits, acompte/reste
-- **Étiquettes** : format Etibox 105×37mm, grille CSS 2 colonnes × 8 lignes = 16 par page
-  - 1 étiquette par produit par commande
-  - Contenu : nom client (14pt) + n° commande (11pt) / produit (12pt) + quantité (16pt bold) / commentaire / date de retrait
-  - **Calibration imprimante** : panneau ⚙️ avec curseurs offset X/Y (-10 à +10mm) pour compenser les marges techniques
-  - Marges internes réglables (pad X/Y)
-  - Toggle contours pour calibration visuelle
-  - Réglages sauvegardés dans le localStorage du navigateur
+- **Fiche client** A4 complète
+- **Étiquettes** 105×37mm, grille CSS 2×8 = 16/page, calibration imprimante (offset X/Y sauvegardé)
 
 ### Produits & Catégories
-
-- **DataTable** sur les produits : pagination, recherche, sélecteur de lignes par page
-- CRUD complet avec modales (ajout/édition)
-- Support **produits à peser** (prix au kg) — le montant n'est pas calculé tant que le poids n'est pas saisi
-- Unités : pièce, kg, grammes, pers.
-- Activation/désactivation
-- Catégorisation avec réordonnancement par **drag & drop**
+- DataTable avec pagination/recherche, CRUD via modales
+- Produits à peser (prix/kg), unités multiples, activation/désactivation
+- Catégories réordonnables par drag & drop
 
 ### Cartes (multi-événements)
-
-- Chaque carte = un événement (Noël 2025, Pâques 2026…)
-- Duplication d'une carte avec ses catégories et produits (sans les commandes)
-- Renommage avec renumérotation automatique des commandes
-- Suppression (protégée si dernière carte)
+- Duplication avec catégories/produits, renommage, suppression protégée
 
 ### Statistiques
-
-- KPI : commandes, CA, acomptes, reste à encaisser
-- Panier moyen, taux d'acompte, nombre de produits distincts
-- Décompte des quantités par produit (trié par quantité décroissante)
-- Répartition par date de retrait
+- KPI, panier moyen, taux d'acompte, décompte par produit, répartition par date
 
 ### Sauvegarde
-
-- Export JSON complet (cartes + catégories + produits + commandes + lignes)
-- Import/restauration depuis fichier JSON — remplace toutes les données
-- Compatible avec les backups de l'ancienne version Node.js (format v2.0)
+- Export/import JSON complet, compatible ancienne version Node.js (v2.0)
 
 ## API internes (AJAX)
 
@@ -169,47 +137,52 @@ gestion_commandes/
 |-------|---------|-------------|
 | `/api/produits/recherche?q=...&carteId=...` | GET | Autocomplétion produits |
 | `/api/production/{ligneId}` | POST | Toggle production (fait/pas fait) |
-| `/api/ligne/{ligneId}/poids` | POST | Mise à jour du poids d'un produit à peser |
-| `/api/commandes/{carteId}/devis/{id}` | POST | Générer un numéro de devis |
+| `/api/ligne/{ligneId}/poids` | POST | Mise à jour poids produit à peser |
+| `/api/commandes/{carteId}/devis/{id}` | POST | Générer numéro de devis |
 
 ## Déploiement
-
-L'application dispose de scripts automatisés pour le premier déploiement et les mises à jour depuis un dépôt GitHub.
 
 ### Fichiers de déploiement
 
 | Fichier | Rôle |
 |---------|------|
-| `deploy.sh` | Script principal — gère l'installation ET les mises à jour |
-| `setup-server.sh` | Configuration initiale du serveur (Debian/Ubuntu) — à lancer une seule fois |
-| `public/webhook.php` | Webhook GitHub — déploiement automatique à chaque push |
+| `deploy.sh` | Installation ET mises à jour depuis GitHub (branche `master`) |
+| `setup-server.sh` | Config initiale serveur Debian/Ubuntu + Nginx + HTTPS |
+| `public/webhook.php` | Webhook GitHub — déploiement auto à chaque push |
 | `.env.local.example` | Modèle de configuration production |
 
-### 1. Premier déploiement sur un VPS
+### 1. Premier déploiement sur le serveur
 
 ```bash
-# Se connecter au serveur
 ssh user@serveur
 
 # Cloner le dépôt
 sudo git clone https://github.com/ebougerolle-efalia/gestion_commandes.git /var/www/gestion_commandes
 cd /var/www/gestion_commandes
 
-# Option A — Configuration automatique (Debian/Ubuntu)
-# Installe PHP, Nginx, Composer, configure le vhost, lance le déploiement
-sudo ./setup-server.sh gestion_commandes.bougerolle.ovh
+# Configuration automatique (Debian/Ubuntu)
+# Installe PHP, Nginx, Composer, HTTPS via Certbot, lance le déploiement
+sudo ./setup-server.sh
+```
 
-# Option B — Configuration manuelle
-# 1. Installer PHP 8.1+, Composer, Nginx/Apache
-# 2. Créer le .env.local
+Le script `setup-server.sh` fait tout automatiquement :
+1. Installe PHP 8.3 + FPM + SQLite + Nginx + Composer + Certbot
+2. Clone le repo, crée le `.env.local` avec un `APP_SECRET` aléatoire
+3. Lance `deploy.sh` (composer install, schema create, cache clear)
+4. Configure Nginx avec le vhost pour `gestion-commandes.bougerolle.ovh`
+5. Installe le certificat SSL via Certbot (HTTPS obligatoire, redirect HTTP→HTTPS)
+6. Configure le sudoers pour le webhook
+
+Après exécution, l'application est accessible sur **https://gestion-commandes.bougerolle.ovh**.
+
+#### Configuration manuelle (si besoin)
+
+```bash
 cp .env.local.example .env.local
-nano .env.local   # Adapter APP_SECRET et éventuellement WEBHOOK_SECRET
+nano .env.local   # Adapter APP_SECRET et WEBHOOK_SECRET
 
-# 3. Lancer le déploiement
 chmod +x deploy.sh
 ./deploy.sh
-
-# 4. Configurer le serveur web (voir exemples ci-dessous)
 ```
 
 ### 2. Mise à jour
@@ -220,30 +193,22 @@ cd /var/www/gestion_commandes
 ```
 
 Le script `deploy.sh` fait automatiquement :
-1. **Sauvegarde** la base SQLite (garde les 10 dernières)
-2. **Pull** les dernières modifications depuis GitHub
-3. **Composer install** (optimisé, sans dev)
-4. **Migrations** du schéma si nécessaire
-5. **Cache clear** + warmup
-6. **Permissions** sur var/
+1. Sauvegarde la base SQLite (garde les 10 dernières dans `var/backups/`)
+2. `git pull` depuis `origin/master`
+3. `composer install` (optimisé, sans dev)
+4. Migrations du schéma si nécessaire
+5. Cache clear + warmup
+6. Permissions sur `var/`
 
 ### 3. Déploiement automatique (webhook GitHub)
 
-Pour déclencher un déploiement à chaque `git push` :
+Pour déclencher un déploiement à chaque `git push` sur `master` :
 
 **Sur GitHub** → Settings → Webhooks → Add webhook :
-- Payload URL : `https://gestion_commandes.bougerolle.ovh/webhook.php`
+- Payload URL : `https://gestion-commandes.bougerolle.ovh/webhook.php`
 - Content type : `application/json`
 - Secret : le même que `WEBHOOK_SECRET` dans `.env.local`
 - Events : ☑ Just the push event
-
-**Sur le serveur** — autoriser www-data à exécuter le script :
-
-```bash
-sudo visudo -f /etc/sudoers.d/gestion_commandes
-# Ajouter :
-www-data ALL=(ALL) NOPASSWD: /var/www/gestion_commandes/deploy.sh
-```
 
 Les logs du webhook sont dans `var/log/webhook.log`.
 
@@ -253,23 +218,33 @@ Les logs du webhook sont dans `var/log/webhook.log`.
 # Sur ton PC de dev (Windows)
 git add .
 git commit -m "Ajout nouveau produit"
-git push origin main
+git push origin master
 
-# → Le webhook déclenche automatiquement le déploiement sur le serveur
-# → La base SQLite est sauvegardée avant chaque mise à jour
-# → Le cache est vidé, l'application est à jour
+# → Le webhook déclenche automatiquement le déploiement
+# → Base SQLite sauvegardée avant chaque update
+# → Cache vidé, application à jour sur https://gestion-commandes.bougerolle.ovh
 ```
 
-### Configuration serveur web
+### Configuration Nginx (référence)
 
-#### Nginx (recommandé)
+Le vhost est créé automatiquement par `setup-server.sh`. Configuration générée :
 
 ```nginx
 server {
     listen 80;
-    server_name gestion_commandes.bougerolle.ovh;
+    server_name gestion-commandes.bougerolle.ovh;
+    return 301 https://$host$request_uri;  # Redirect HTTP → HTTPS
+}
+
+server {
+    listen 443 ssl;
+    server_name gestion-commandes.bougerolle.ovh;
     root /var/www/gestion_commandes/public;
     index index.php;
+
+    # SSL géré par Certbot
+    ssl_certificate /etc/letsencrypt/live/gestion-commandes.bougerolle.ovh/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/gestion-commandes.bougerolle.ovh/privkey.pem;
 
     client_max_body_size 20M;
 
@@ -289,29 +264,7 @@ server {
 }
 ```
 
-HTTPS avec Certbot :
-```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d gestion_commandes.bougerolle.ovh
-```
-
-#### Apache (mod_rewrite)
-
-```apache
-<VirtualHost *:80>
-    ServerName gestion_commandes.bougerolle.ovh
-    DocumentRoot /var/www/gestion_commandes/public
-
-    <Directory /var/www/gestion_commandes/public>
-        AllowOverride All
-        Require all granted
-    </Directory>
-</VirtualHost>
-```
-
-Installer le pack Apache : `composer require symfony/apache-pack`.
-
-#### Serveur PHP intégré (réseau local / dev)
+### Serveur PHP intégré (réseau local / dev)
 
 ```bash
 php -S 0.0.0.0:8080 -t public/
@@ -321,11 +274,12 @@ Accessible depuis tablette/autre PC via `http://<ip-du-pc>:8080`.
 
 ## Notes techniques
 
-- **Cache Twig** : après modification des templates, vider le cache avec `php bin/console cache:clear` ou supprimer `var/cache/`
-- **SQLite** : la base est un fichier unique dans `var/data/gestion_commandes.db` — facile à sauvegarder, copier, déplacer
-- **Tailwind CSS v4** est chargé via le script CDN `@tailwindcss/browser@4` — pas de build nécessaire, les classes sont interprétées à la volée
-- **Pas de jQuery** — tout le JavaScript est en vanilla ES6+
-- Les étiquettes utilisent `@page { size: 210mm 297mm; margin: 0 }` — dans les paramètres d'impression du navigateur, sélectionner "Taille réelle / 100%" et marges "Aucune"
+- **Cache Twig** : vider avec `php bin/console cache:clear` ou supprimer `var/cache/`
+- **SQLite** : fichier unique `var/data/bougerolle.db`
+- **Tailwind CSS v4** via CDN `@tailwindcss/browser@4` — pas de build nécessaire
+- **Pas de jQuery** — JavaScript vanilla ES6+
+- **Étiquettes** : paramétrer l'impression en "Taille réelle / 100%" et marges "Aucune"
+- **HTTPS** : certificat Let's Encrypt renouvelé automatiquement par Certbot
 
 ## Licence
 
