@@ -2,72 +2,154 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>{{ commande.numero }}</title>
+    <title>Commande {{ commande.numero }}</title>
     <style>
-        @page { size: A4; margin: 15mm; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Source Sans Pro', Arial, sans-serif; font-size: 12pt; color: #333; }
-        .header { text-align: center; margin-bottom: 20px; border-bottom: 3px double #333; padding-bottom: 10px; }
-        .header h1 { font-size: 18pt; }
-        .header .sub { font-size: 10pt; color: #666; }
-        .numero { font-size: 20pt; font-weight: bold; text-align: center; margin: 10px 0; padding: 10px; background: #343a40; color: white; border-radius: 5px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .box { border: 1px solid #dee2e6; border-radius: 5px; padding: 10px; }
-        .box h3 { font-size: 10pt; text-transform: uppercase; color: #6c757d; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
-        .box .val { font-size: 13pt; font-weight: bold; }
-        .box .det { font-size: 10pt; color: #555; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-        th, td { padding: 6px 10px; border: 1px solid #dee2e6; }
-        th { background: #f8f9fa; font-size: 10pt; text-transform: uppercase; }
-        .text-right { text-align: right; }
-        .total td { font-weight: bold; font-size: 13pt; background: #e9ecef; }
-        .a-peser { background: #fff3cd; }
-        .footer { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .footer .box .amount { font-size: 16pt; font-weight: bold; }
-        .footer .box .amount.ok { color: #198754; }
-        .footer .box .amount.due { color: #dc3545; }
-        .comment { margin-top: 15px; padding: 10px; border: 1px dashed #adb5bd; border-radius: 5px; font-style: italic; }
-        .print-bar { text-align: center; margin-bottom: 15px; }
-        .print-bar button { padding: 8px 24px; font-size: 14pt; cursor: pointer; border: 1px solid #ccc; background: white; border-radius: 4px; }
-        .print-bar button:hover { background: #f0f0f0; }
-        @media print { .print-bar { display: none; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-        @media screen { body { max-width: 800px; margin: 20px auto; padding: 20px; } }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 10pt;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header-table { width: 100%; margin-bottom: 15px; }
+        .header-table td { vertical-align: top; padding: 0; }
+        .company-name { font-size: 18pt; font-weight: bold; color: #1a1a1a; }
+        .company-sub { font-size: 9pt; color: #666; }
+        .cmd-label { font-size: 9pt; color: #666; text-align: right; }
+        .cmd-numero { font-size: 16pt; font-weight: bold; text-align: right; }
+
+        h1 { font-size: 20pt; font-weight: bold; color: #1a1a1a; text-align: center; letter-spacing: 2px; margin-bottom: 15px; }
+
+        hr { border: none; border-top: 2px solid #333; margin-bottom: 15px; }
+
+        .info-table { width: 100%; margin-bottom: 15px; font-size: 10pt; }
+        .info-table td { padding: 3px 8px; vertical-align: top; }
+        .info-table .label { font-weight: bold; color: #555; width: 120px; }
+
+        .products-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+        .products-table th {
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #666;
+            padding: 6px 8px;
+            border-bottom: 2px solid #333;
+            text-align: left;
+        }
+        .products-table th.r { text-align: right; }
+        .products-table th.c { text-align: center; }
+        .products-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 9.5pt;
+        }
+        .products-table td.r { text-align: right; }
+        .products-table td.c { text-align: center; }
+        .products-table .note { font-size: 8pt; color: #b45309; font-style: italic; margin-top: 2px; }
+        .products-table .peser { color: #b45309; }
+
+        .totals-table { width: 50%; margin-left: auto; border-collapse: collapse; }
+        .totals-table td { padding: 4px 8px; font-size: 10pt; }
+        .totals-table td.r { text-align: right; font-weight: bold; }
+        .totals-table tr.big td { font-size: 12pt; font-weight: bold; border-top: 2px solid #333; padding-top: 8px; }
+        .totals-table tr.solde td { color: #059669; }
+        .totals-table tr.reste td { color: #dc3545; }
+
+        .footer { margin-top: 30px; font-size: 8pt; color: #999; text-align: center; }
     </style>
 </head>
 <body>
-    <div class="print-bar">
-        <button onclick="window.print()">🖨️ Imprimer</button>
-        <button onclick="window.close()">✕ Fermer</button>
-    </div>
-    <div class="header">
-        <h1>Pierrick Bougerolle — Charcutier-Traiteur</h1>
-        <div class="sub">Commande de fêtes</div>
-    </div>
-    <div class="numero">{{ commande.numero }}</div>
-    <div class="grid">
-        <div class="box"><h3>Client</h3><div class="val">{{ commande.nomClient }}</div><div class="det">Tél. : {{ commande.telephone }}</div></div>
-        <div class="box"><h3>Retrait</h3>{% if commande.dateRetrait %}<div class="val">{{ commande.dateRetrait|date('d/m/Y') }}</div>{% if commande.creneauRetrait %}<div class="det">Créneau : {{ commande.creneauRetrait }}</div>{% endif %}{% else %}<div class="det">À convenir</div>{% endif %}</div>
-    </div>
-    {% if commande.numeroDevis %}<div style="text-align:right;font-size:10pt;color:#666;margin-bottom:10px">Devis n° {{ commande.numeroDevis }} — {{ commande.dateCreation|date('d/m/Y') }}</div>{% endif %}
-    <table>
-        <thead><tr><th style="width:45%">Produit</th><th class="text-right" style="width:15%">Quantité</th><th class="text-right" style="width:20%">Prix unit.</th><th class="text-right" style="width:20%">Montant</th></tr></thead>
+
+    <h1>FICHE COMMANDE</h1>
+
+    <table class="header-table">
+        <tr>
+            <td>
+                <div class="company-name">Pierrick Bougerolle</div>
+                <div class="company-sub">Charcutier - Traiteur</div>
+            </td>
+            <td>
+                <div class="cmd-label">Commande n°</div>
+                <div class="cmd-numero">{{ commande.numero }}</div>
+                {% if commande.numeroDevis %}
+                <div style="font-size:9pt; color:#059669; text-align:right; margin-top:4px;">Devis {{ commande.numeroDevis }}</div>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <table class="info-table">
+        <tr>
+            <td style="width:50%; vertical-align:top;">
+                <table>
+                    <tr><td class="label">Client</td><td>{{ commande.nomClient }}</td></tr>
+                    <tr><td class="label">Téléphone</td><td>{{ commande.telephone }}</td></tr>
+                </table>
+            </td>
+            <td style="width:50%; vertical-align:top;">
+                <table>
+                    {% if commande.dateRetrait %}
+                    <tr><td class="label">Date retrait</td><td>{{ commande.dateRetrait|date('d/m/Y') }}{% if commande.creneauRetrait %} — {{ commande.creneauRetrait }}{% endif %}</td></tr>
+                    {% endif %}
+                    {% if commande.commentaire %}
+                    <tr><td class="label">Commentaire</td><td style="color:#b45309; font-style:italic;">{{ commande.commentaire }}</td></tr>
+                    {% endif %}
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th>Produit</th>
+                <th class="c" style="width:70px;">Quantité</th>
+                <th class="r" style="width:80px;">P.U.</th>
+                <th class="r" style="width:80px;">Montant</th>
+            </tr>
+        </thead>
         <tbody>
-            {% for l in commande.lignes %}
-            <tr class="{{ l.aPeser ? 'a-peser' }}">
-                <td>{{ l.produitNom }}{% if l.commentaire %}<br><small style="color:#666">{{ l.commentaire }}</small>{% endif %}</td>
-                <td class="text-right">{{ l.quantite }} {{ l.unite }}</td>
-                <td class="text-right">{{ l.prixUnitaire|number_format(2, ',', ' ') }} €</td>
-                <td class="text-right">{{ l.montantLabel }}</td>
+            {% for ligne in commande.lignes %}
+            <tr>
+                <td>
+                    {{ ligne.produitNom }}
+                    {% if ligne.aPeser %}<span class="peser"> ⚖️</span>{% endif %}
+                    {% if ligne.commentaire %}<div class="note">→ {{ ligne.commentaire }}</div>{% endif %}
+                </td>
+                <td class="c">{{ ligne.quantite }} {{ ligne.unite }}</td>
+                <td class="r">{{ ligne.prixUnitaire|number_format(2, ',', ' ') }} €</td>
+                <td class="r">
+                    {% if ligne.aPeser and ligne.montantPese > 0 %}
+                        {{ ligne.montantPese|number_format(2, ',', ' ') }} €
+                    {% elseif ligne.aPeser %}
+                        <span class="peser">À peser</span>
+                    {% else %}
+                        {{ (ligne.quantite * ligne.prixUnitaire)|number_format(2, ',', ' ') }} €
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
-        <tfoot><tr class="total"><td colspan="3" class="text-right">TOTAL</td><td class="text-right">{{ commande.total|number_format(2, ',', ' ') }} €</td></tr></tfoot>
     </table>
+
+    <table class="totals-table">
+        <tr class="big"><td>Total</td><td class="r">{{ commande.total|number_format(2, ',', ' ') }} €</td></tr>
+        {% if commande.acompte > 0 %}
+        <tr><td>Acompte</td><td class="r">- {{ commande.acompte|number_format(2, ',', ' ') }} €</td></tr>
+        {% endif %}
+        {% if commande.reste > 0 %}
+        <tr class="reste"><td>Reste à payer</td><td class="r">{{ commande.reste|number_format(2, ',', ' ') }} €</td></tr>
+        {% else %}
+        <tr class="solde"><td>Soldé</td><td class="r">✓</td></tr>
+        {% endif %}
+    </table>
+
     <div class="footer">
-        <div class="box"><h3>Acompte versé</h3><div class="amount ok">{{ commande.acompte|number_format(2, ',', ' ') }} €</div></div>
-        <div class="box"><h3>Reste à payer</h3><div class="amount {{ commande.reste > 0 ? 'due' : 'ok' }}">{{ commande.reste|number_format(2, ',', ' ') }} €</div></div>
+        Généré le {{ 'now'|date('d/m/Y à H:i') }} — Pierrick Bougerolle, Charcutier-Traiteur
     </div>
-    {% if commande.commentaire %}<div class="comment"><strong>Note :</strong> {{ commande.commentaire }}</div>{% endif %}
-    <div style="margin-top:30px;font-size:9pt;text-align:center;color:#999;border-top:1px solid #ddd;padding-top:10px">Commande éditée le {{ commande.dateCreation|date('d/m/Y à H:i') }}</div>
+
 </body>
 </html>

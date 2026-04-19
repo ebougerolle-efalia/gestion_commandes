@@ -11,3 +11,7 @@ framework:
         log: true
     router:
         utf8: true
+    http_client:
+        scoped_clients:
+            gotenberg.client:
+                base_uri: '%env(GOTENBERG_DSN)%'

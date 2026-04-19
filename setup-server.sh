@@ -1,219 +1,169 @@
 #!/bin/bash
 # =============================================================================
-# Gestion Commandes — Configuration initiale du serveur Debian 13
-# Usage :
-#   ./setup-server.sh [domaine] [repo_git]
-#
-# Exemple :
-#   ./setup-server.sh gestion-commandes.bougerolle.ovh https://github.com/ebougerolle-efalia/gestion_commandes.git
+# Bougerolle — Configuration initiale du serveur (Debian/Ubuntu)
+# À lancer une seule fois sur un serveur vierge.
+# Usage : sudo ./setup-server.sh
 # =============================================================================
 
-set -euo pipefail
+set -e
 
 DOMAIN="${1:-gestion-commandes.bougerolle.ovh}"
 APP_DIR="/var/www/gestion_commandes"
 REPO_URL="${2:-https://github.com/ebougerolle-efalia/gestion_commandes.git}"
-NGINX_SITE="gestion_commandes"
-WEB_USER="www-data"
-PHP_FPM_SOCK=""
-DB_PATH="${APP_DIR}/var/data/gestion_commandes.db"
 
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
 NC='\033[0m'
+log() { echo -e "${GREEN}[SETUP]${NC} $1"; }
 
-log()  { echo -e "${GREEN}[SETUP]${NC} $1"; }
-warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-err()  { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
-
-if [ "${EUID}" -ne 0 ]; then
-  err "Ce script doit être lancé en root."
+if [ "$EUID" -ne 0 ]; then
+    echo "Ce script doit être lancé avec sudo."
+    exit 1
 fi
 
-if [ ! -f /etc/debian_version ]; then
-  err "Ce script est prévu pour Debian."
-fi
-
-log "Mise à jour des paquets..."
+# --- 1. Paquets système ------------------------------------------------------
+log "Installation des paquets…"
 apt update
 
-log "Installation des dépendances système..."
+# Détecter la meilleure version PHP disponible
+PHP_V=""
+for v in 8.4 8.3 8.2 8.1; do
+    if apt-cache show php${v}-cli &>/dev/null 2>&1; then
+        PHP_V=$v
+        break
+    fi
+done
+if [ -z "$PHP_V" ]; then
+    echo "[ERROR] Aucune version PHP 8.x trouvée dans les dépôts."
+    exit 1
+fi
+log "PHP $PHP_V détecté."
+
 apt install -y \
-  nginx \
-  git \
-  unzip \
-  curl \
-  ca-certificates \
-  gnupg \
-  lsb-release \
-  acl \
-  certbot \
-  python3-certbot-nginx \
-  composer \
-  sqlite3 \
-  openssl \
-  php-cli \
-  php-fpm \
-  php-sqlite3 \
-  php-xml \
-  php-intl \
-  php-mbstring \
-  php-curl \
-  php-zip
+    php${PHP_V}-cli php${PHP_V}-fpm php${PHP_V}-sqlite3 php${PHP_V}-xml php${PHP_V}-intl php${PHP_V}-mbstring php${PHP_V}-curl \
+    nginx git unzip curl
 
-log "Détection de PHP-FPM..."
-if [ -S /run/php/php-fpm.sock ]; then
-  PHP_FPM_SOCK="/run/php/php-fpm.sock"
+# --- Docker + Gotenberg (génération PDF) -------------------------------------
+if ! command -v docker &>/dev/null; then
+    log "Installation de Docker…"
+    curl -fsSL https://get.docker.com | sh
+    systemctl enable docker
+    systemctl start docker
+fi
+
+if ! docker ps --format '{{.Names}}' | grep -q gotenberg; then
+    log "Lancement du conteneur Gotenberg…"
+    docker run -d --name gotenberg --restart unless-stopped -p 3000:3000 gotenberg/gotenberg:8
+    log "Gotenberg démarré sur le port 3000."
 else
-  PHP_FPM_SOCK="$(find /run/php -maxdepth 1 -type s -name 'php*.sock' | head -n 1 || true)"
+    log "Gotenberg déjà en cours d'exécution."
 fi
 
-if [ -z "${PHP_FPM_SOCK}" ]; then
-  err "Impossible de trouver la socket PHP-FPM dans /run/php."
+# Installer Composer
+if ! command -v composer &>/dev/null; then
+    log "Installation de Composer…"
+    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 fi
 
-log "Socket PHP-FPM détectée : ${PHP_FPM_SOCK}"
-
-log "Activation et démarrage des services..."
-systemctl enable nginx
-systemctl restart nginx
-systemctl enable php*-fpm 2>/dev/null || true
-systemctl restart php*-fpm 2>/dev/null || true
-
-# --- Projet : clone si nécessaire --------------------------------------------
-if [ ! -d "${APP_DIR}/.git" ]; then
-  log "Clonage du dépôt dans ${APP_DIR}..."
-  mkdir -p "$(dirname "${APP_DIR}")"
-  git clone "${REPO_URL}" "${APP_DIR}"
+# --- 2. Cloner le projet -----------------------------------------------------
+if [ ! -d "$APP_DIR" ]; then
+    log "Clonage du dépôt → $APP_DIR"
+    git clone "$REPO_URL" "$APP_DIR"
 else
-  log "Le dépôt Git existe déjà dans ${APP_DIR}, clonage ignoré."
+    log "Le dossier $APP_DIR existe déjà."
 fi
 
-cd "${APP_DIR}"
+cd "$APP_DIR"
 
-# --- deploy.sh ----------------------------------------------------------------
-if [ -f "deploy.sh" ]; then
-  chmod +x deploy.sh
-elif [ -f "deploy-2.sh" ]; then
-  log "Le dépôt contient deploy-2.sh, copie vers deploy.sh..."
-  cp deploy-2.sh deploy.sh
-  chmod +x deploy.sh
-else
-  warn "Aucun deploy.sh trouvé dans le projet."
-fi
-
-# --- .env.local --------------------------------------------------------------
+# --- 3. Environnement --------------------------------------------------------
 if [ ! -f ".env.local" ]; then
-  log "Création du fichier .env.local..."
-  APP_SECRET="$(openssl rand -hex 16)"
-  WEBHOOK_SECRET="$(openssl rand -hex 24)"
-
-  cat > .env.local <<EOF
+    log "Création du .env.local…"
+    SECRET=$(openssl rand -hex 16)
+    cat > .env.local <<EOF
 APP_ENV=prod
-APP_SECRET=${APP_SECRET}
-
-###> doctrine ###
-DATABASE_URL="sqlite:///%kernel.project_dir%/var/data/gestion_commandes.db"
-###< doctrine ###
-
-WEBHOOK_SECRET=${WEBHOOK_SECRET}
+APP_SECRET=$SECRET
+DATABASE_URL="sqlite:///%kernel.project_dir%/var/data/bougerolle.db"
+GOTENBERG_DSN=http://localhost:3000
+WEBHOOK_SECRET=$(openssl rand -hex 20)
 EOF
-
-  chmod 640 .env.local
-  chown root:${WEB_USER} .env.local || true
-else
-  log ".env.local déjà présent, création ignorée."
+    log "APP_SECRET généré automatiquement."
 fi
 
-# --- Dossiers applicatifs -----------------------------------------------------
-log "Création des dossiers applicatifs..."
-mkdir -p var/cache var/log var/data var/backups
-touch "${DB_PATH}" 2>/dev/null || true
-chown -R ${WEB_USER}:${WEB_USER} var || true
-chmod -R 775 var
+# --- 4. Déploiement initial ---------------------------------------------------
+log "Lancement du déploiement initial…"
+chmod +x deploy.sh
+./deploy.sh
 
-# --- Nginx --------------------------------------------------------------------
-log "Configuration Nginx..."
-cat > /etc/nginx/sites-available/${NGINX_SITE} <<EOF
+# --- 5. Permissions -----------------------------------------------------------
+chown -R www-data:www-data var/
+chmod -R 775 var/
+
+# --- 6. Configuration Nginx ---------------------------------------------------
+log "Configuration Nginx pour $DOMAIN…"
+cat > /etc/nginx/sites-available/gestion_commandes <<NGINX
 server {
     listen 80;
-    listen [::]:80;
-    server_name ${DOMAIN};
-
-    root ${APP_DIR}/public;
+    server_name $DOMAIN;
+    root $APP_DIR/public;
     index index.php;
-    client_max_body_size 20M;
 
-    location /.well-known/acme-challenge/ {
-        root /var/www/html;
-    }
+    # Logs
+    access_log /var/log/nginx/gestion_commandes_access.log;
+    error_log  /var/log/nginx/gestion_commandes_error.log;
+
+    # Taille max upload (pour les backups JSON)
+    client_max_body_size 20M;
 
     location / {
         try_files \$uri /index.php\$is_args\$args;
     }
 
-    location ~ ^/index\.php(/|$) {
-        fastcgi_pass unix:${PHP_FPM_SOCK};
+    location ~ ^/index\\.php(/|$) {
+        fastcgi_pass unix:/run/php/php${PHP_V}-fpm.sock;
         fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
-        fastcgi_param DOCUMENT_ROOT \$realpath_root;
         include fastcgi_params;
+        fastcgi_buffer_size 128k;
+        fastcgi_buffers 4 256k;
         internal;
     }
 
-    location ~ \.php$ {
-        return 404;
-    }
-
-    location ~ /\. {
-        deny all;
-    }
-
-    location ~ /(var|config|src|vendor|bin|templates)/ {
-        deny all;
-    }
+    # Bloquer l'accès aux fichiers sensibles
+    location ~ /\\. { deny all; }
+    location ~ /(var|config|src|vendor|bin|templates)/ { deny all; }
 }
-EOF
+NGINX
 
-ln -sf /etc/nginx/sites-available/${NGINX_SITE} /etc/nginx/sites-enabled/${NGINX_SITE}
+ln -sf /etc/nginx/sites-available/gestion_commandes /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
-nginx -t
-systemctl reload nginx
+nginx -t && systemctl reload nginx
+log "Nginx configuré pour $DOMAIN."
 
-# --- sudoers pour webhook -----------------------------------------------------
-log "Configuration sudoers pour le webhook..."
-cat > /etc/sudoers.d/gestion_commandes <<EOF
-www-data ALL=(root) NOPASSWD: ${APP_DIR}/deploy.sh
-EOF
+# --- 7. HTTPS (obligatoire) ---------------------------------------------------
+log "Installation de Certbot et activation HTTPS…"
+apt install -y certbot python3-certbot-nginx
+
+certbot --nginx -d $DOMAIN --non-interactive --agree-tos --email admin@bougerolle.ovh --redirect || {
+    warn "Certbot a échoué. Vérifiez que le DNS de $DOMAIN pointe vers ce serveur."
+    warn "Relancez manuellement : certbot --nginx -d $DOMAIN"
+}
+
+# Renouvellement auto (cron déjà installé par certbot)
+log "HTTPS configuré. Renouvellement automatique activé."
+
+# --- 8. Webhook sudoers -------------------------------------------------------
+log "Configuration sudoers pour le webhook…"
+echo "www-data ALL=(ALL) NOPASSWD: $APP_DIR/deploy.sh" > /etc/sudoers.d/gestion_commandes
 chmod 440 /etc/sudoers.d/gestion_commandes
-
-# --- Déploiement applicatif ---------------------------------------------------
-if [ -f "./deploy.sh" ]; then
-  log "Lancement du déploiement applicatif..."
-  ./deploy.sh || warn "Le déploiement a échoué. Vérifie le contenu de deploy.sh."
-else
-  warn "deploy.sh absent, déploiement non lancé."
-fi
-
-# --- Certbot ------------------------------------------------------------------
-log "Génération du certificat Let's Encrypt..."
-if certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --register-unsafely-without-email --redirect; then
-  log "Certificat SSL installé avec succès."
-else
-  warn "Échec de Certbot. Vérifie que le domaine pointe bien sur ce serveur."
-fi
 
 echo ""
 log "============================================"
 log " SERVEUR CONFIGURÉ"
-log " Domaine       : https://${DOMAIN}"
-log " Application   : ${APP_DIR}"
-log " Base SQLite   : ${DB_PATH}"
-log " Socket PHP    : ${PHP_FPM_SOCK}"
+log " URL : https://$DOMAIN"
+log " App : $APP_DIR"
+log " Repo : $REPO_URL (branche master)"
 log ""
 log " Webhook GitHub :"
-log " Payload URL   : https://${DOMAIN}/webhook.php"
-log " Secret        : voir WEBHOOK_SECRET dans ${APP_DIR}/.env.local"
+log "   Payload URL : https://$DOMAIN/webhook.php"
+log "   Secret : celui de WEBHOOK_SECRET dans .env.local"
 log "============================================"
 echo ""

@@ -19,7 +19,9 @@
         "doctrine/orm": "^3.0",
         "doctrine/dbal": "^4.0",
         "doctrine/doctrine-bundle": "^2.11",
-        "doctrine/doctrine-migrations-bundle": "^3.3"
+        "doctrine/doctrine-migrations-bundle": "^3.3",
+        "symfony/http-client": "^7.0",
+        "sensiolabs/gotenberg-bundle": "^1.2"
     },
     "require-dev": {
         "symfony/maker-bundle": "^1.50"

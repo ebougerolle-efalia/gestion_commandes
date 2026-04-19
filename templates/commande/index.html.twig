@@ -145,7 +145,7 @@
                     <td class="py-3.5 px-3 pr-5 text-center" onclick="event.stopPropagation()">
                         <div class="inline-flex items-center gap-1">
                             <a href="{{ path('app_commande_edit', {carteId: carte.id, id: cmd.id}) }}" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors" title="Modifier"><i class="fas fa-pencil-alt text-xs"></i></a>
-                            <a href="{{ path('app_commande_print', {carteId: carte.id, id: cmd.id}) }}" target="_blank" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Imprimer"><i class="fas fa-print text-xs"></i></a>
+                            <a href="{{ path('app_commande_pdf', {carteId: carte.id, id: cmd.id}) }}" target="_blank" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="PDF"><i class="fas fa-file-pdf text-xs"></i></a>
                             <button onclick="confirmDelete('{{ path('app_commande_delete', {carteId: carte.id, id: cmd.id}) }}','{{ cmd.numero }}')" class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Supprimer"><i class="fas fa-trash text-xs"></i></button>
                         </div>
                     </td>

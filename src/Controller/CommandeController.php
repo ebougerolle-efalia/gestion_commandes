@@ -8,6 +8,7 @@ use App\Entity\LigneCommande;
 use App\Repository\CarteRepository;
 use App\Repository\CommandeRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Sensiolabs\GotenbergBundle\GotenbergPdfInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -182,33 +183,49 @@ class CommandeController extends AbstractController
         return $this->redirectToRoute('app_commande_index', ['carteId' => $carteId]);
     }
 
-    /** Impression fiche client */
-    #[Route('/commandes/{carteId}/imprimer/{id}', name: 'app_commande_print')]
-    public function print(int $carteId, int $id, CommandeRepository $repo): Response
+    /** PDF fiche client */
+    #[Route('/commandes/{carteId}/pdf/{id}', name: 'app_commande_pdf')]
+    public function pdf(int $carteId, int $id, CommandeRepository $repo, GotenbergPdfInterface $gotenberg): Response
     {
         $commande = $repo->find($id);
         if (!$commande) {
             throw $this->createNotFoundException();
         }
 
-        return $this->render('commande/print.html.twig', [
-            'commande' => $commande,
-        ]);
+        return $gotenberg->html()
+            ->content('commande/print.html.twig', [
+                'commande' => $commande,
+            ])
+            ->paperSize(8.27, 11.69)          // A4 en pouces
+            ->margins(0.59, 0.59, 0.59, 0.59) // ~15mm
+            ->printBackground(true)
+            ->preferCssPageSize(false)
+            ->fileName('commande-' . $commande->getNumero() . '.pdf')
+            ->generate()
+            ->stream();
     }
 
-    /** Impression étiquettes AVERY 99x38mm */
+    /** PDF étiquettes 105x37mm */
     #[Route('/commandes/{carteId}/etiquettes', name: 'app_commande_etiquettes')]
-    public function etiquettes(int $carteId, CarteRepository $carteRepo, CommandeRepository $cmdRepo): Response
+    public function etiquettes(int $carteId, CarteRepository $carteRepo, CommandeRepository $cmdRepo, GotenbergPdfInterface $gotenberg): Response
     {
         $carte = $carteRepo->find($carteId);
         if (!$carte) {
             throw $this->createNotFoundException();
         }
 
-        return $this->render('commande/etiquettes.html.twig', [
-            'carte' => $carte,
-            'commandes' => $cmdRepo->findByCarte($carte),
-        ]);
+        return $gotenberg->html()
+            ->content('commande/etiquettes.html.twig', [
+                'carte' => $carte,
+                'commandes' => $cmdRepo->findByCarte($carte),
+            ])
+            ->paperSize(8.27, 11.69)    // A4
+            ->margins(0, 0, 0, 0)       // Pas de marge — la grille couvre toute la page
+            ->printBackground(true)
+            ->preferCssPageSize(true)    // Respecter le @page CSS
+            ->fileName('etiquettes-' . $carte->getNom() . '.pdf')
+            ->generate()
+            ->stream();
     }
 
     /** Générer numéro de devis */
