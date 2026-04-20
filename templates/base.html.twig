@@ -58,12 +58,23 @@
             <ul class="space-y-0.5">
                 <li><a href="{{ path('app_carte_index') }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_carte' ? 'active' }}"><i class="sidebar-icon fas fa-layer-group w-5 text-center text-[13px]"></i>Gestion des cartes</a></li>
                 <li><a href="{{ path('app_backup_index') }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_backup' ? 'active' }}"><i class="sidebar-icon fas fa-database w-5 text-center text-[13px]"></i>Sauvegarde</a></li>
+                {% if is_granted('ROLE_ADMIN') %}
+                <li><a href="{{ path('app_user_index') }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_user' ? 'active' }}"><i class="sidebar-icon fas fa-users w-5 text-center text-[13px]"></i>Utilisateurs</a></li>
+                {% endif %}
             </ul>
         </nav>
 
         <div class="border-t border-white/[.06] px-7 py-4">
+            {% if app.user %}
+            <a href="{{ path('app_profile') }}" class="text-[12px] text-gray-400 hover:text-white transition-colors">{{ app.user.username }} <span class="text-gray-600">({{ app.user.role }})</span></a>
+            <div class="flex items-center gap-3 mt-1">
+                <a href="{{ path('app_profile') }}" class="text-[11px] text-blue-400 hover:text-blue-300">Mon profil</a>
+                <a href="{{ path('app_logout') }}" class="text-[11px] text-red-400 hover:text-red-300">Déconnexion</a>
+            </div>
+            {% else %}
             <p class="text-[12px] text-gray-500">Pierrick Bougerolle</p>
             <p class="text-[11px] text-gray-600">Charcutier-Traiteur</p>
+            {% endif %}
         </div>
     </aside>
 

@@ -67,13 +67,11 @@ fi
 
 # --- Composer ----------------------------------------------------------------
 $COMPOSER_BIN config allow-plugins.symfony/runtime true --no-interaction 2>/dev/null
-if [ "$MODE" = "install" ]; then
-    log "Installation des dépendances Composer…"
-    $COMPOSER_BIN install --no-dev --optimize-autoloader --no-interaction
-else
-    log "Mise à jour des dépendances Composer…"
-    $COMPOSER_BIN install --no-dev --optimize-autoloader --no-interaction
-fi
+log "Installation / mise à jour des dépendances Composer…"
+$COMPOSER_BIN install --no-dev --optimize-autoloader --no-interaction 2>/dev/null || {
+    warn "Lock file obsolète — lancement de composer update…"
+    $COMPOSER_BIN update --no-dev --optimize-autoloader --no-interaction
+}
 
 # --- Base de données ---------------------------------------------------------
 mkdir -p "$(dirname "$DB_PATH")"
@@ -81,6 +79,8 @@ mkdir -p "$(dirname "$DB_PATH")"
 if [ ! -f "$DB_PATH" ]; then
     log "Création du schéma de la base de données…"
     $PHP_BIN bin/console doctrine:schema:create --no-interaction
+    log "Seed initial (utilisateur admin)…"
+    $PHP_BIN bin/console app:seed --no-interaction 2>/dev/null || true
 else
     log "Mise à jour du schéma (si nécessaire)…"
     $PHP_BIN bin/console doctrine:schema:update --force --no-interaction 2>/dev/null || {
