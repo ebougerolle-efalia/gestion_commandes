@@ -37,7 +37,7 @@ else
   log "MISE À JOUR"
 fi
 
-echo "--- Sauvegarde avant mise à jour --------------------------------------------"
+echo "--- Sauvegarde avant mise à jour ---------------------------------------------"
 if [ "$MODE" = "update" ] && [ -f "$DBPATH" ]; then
   mkdir -p "$BACKUPDIR"
   BACKUPFILE="$BACKUPDIR/bougerolle-$(date +%Y%m%d-%H%M%S).db"
