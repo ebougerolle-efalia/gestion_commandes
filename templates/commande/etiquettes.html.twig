@@ -104,6 +104,7 @@
                 nomClient: cmd.nomClient,
                 produit: ligne.produitNom,
                 quantite: ligne.quantite,
+                nombreParts: ligne.nombreParts,
                 unite: ligne.unite,
                 aPeser: ligne.aPeser,
                 commentaire: ligne.commentaire,
@@ -124,7 +125,9 @@
             <div class="middle">
                 <span class="produit">{{ etiq.produit }}{{ etiq.aPeser ? ' ⚖️' : '' }}</span>
                 <span class="qte">
-                    {% if etiq.unite == 'kg' or etiq.unite == 'g' %}
+                    {% if etiq.aPeser %}
+                        {% if etiq.nombreParts > 0 %}{{ etiq.nombreParts }} part{{ etiq.nombreParts > 1 ? 's' : '' }}{% else %}⚖️{% endif %}
+                    {% elseif etiq.unite == 'kg' or etiq.unite == 'g' %}
                         {{ etiq.quantite }} {{ etiq.unite }}
                     {% else %}
                         × {{ etiq.quantite }}

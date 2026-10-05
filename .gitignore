@@ -16,3 +16,7 @@
 /.vscode/
 *.swp
 *.swo
+
+# Local tooling / artefacts
+/.claude/
+/commandes.zip

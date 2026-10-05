@@ -79,13 +79,16 @@ class CommandeRepository extends ServiceEntityRepository
             [$carte->getId()]
         )->fetchAssociative();
 
+        // Produits à peser : décompte en parts commandées ; sinon en quantité/unité.
         $decompte = $conn->executeQuery(
-            'SELECT lc.produit_nom, SUM(lc.quantite) as quantite, lc.unite
+            "SELECT lc.produit_nom,
+                    SUM(CASE WHEN lc.a_peser = 1 THEN lc.nombre_parts ELSE lc.quantite END) as quantite,
+                    CASE WHEN lc.a_peser = 1 THEN 'parts' ELSE lc.unite END as unite
              FROM lignes_commande lc
              JOIN commandes c ON lc.commande_id = c.id
              WHERE c.carte_id = ?
-             GROUP BY lc.produit_code, lc.produit_nom, lc.unite
-             ORDER BY quantite DESC',
+             GROUP BY lc.produit_code, lc.produit_nom, (CASE WHEN lc.a_peser = 1 THEN 'parts' ELSE lc.unite END)
+             ORDER BY quantite DESC",
             [$carte->getId()]
         )->fetchAllAssociative();
 

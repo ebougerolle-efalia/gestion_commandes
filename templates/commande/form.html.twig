@@ -90,6 +90,7 @@ lignes = [
         produitNom: {{ l.produitNom|json_encode|raw }},
         prixUnitaire: {{ l.prixUnitaire }},
         quantite: {{ l.quantite }},
+        nombreParts: {{ l.nombreParts }},
         unite: {{ l.unite|json_encode|raw }},
         aPeser: {{ l.aPeser ? 'true' : 'false' }},
         montantPese: {{ l.montantPese }},
@@ -131,9 +132,10 @@ si.addEventListener('input', function() {
                     // Adapter le label du champ quantité
                     const qteInput = document.getElementById('searchQte');
                     if (pr.aPeser) {
-                        qteInput.placeholder = 'kg';
-                        qteInput.value = '';
-                        qteInput.step = '0.01';
+                        // Produit à peser : on saisit le nombre de parts (le poids sera saisi plus tard, à la pesée)
+                        qteInput.placeholder = 'parts';
+                        qteInput.value = '1';
+                        qteInput.step = '1';
                         qteInput.min = '0';
                     } else {
                         qteInput.placeholder = '';
@@ -160,15 +162,17 @@ document.getElementById('btnAjouterProduit').addEventListener('click', () => {
     const qte = parseFloat(document.getElementById('searchQte').value) || 0;
 
     if (selectedProduit.aPeser) {
-        // Produit à peser : poids saisi (ou 0 si pas encore pesé)
+        // Produit à peser : on enregistre le nombre de parts. Le poids (quantite) sera saisi
+        // plus tard à la pesée, depuis la liste des commandes.
         lignes.push({
             produitCode: selectedProduit.code,
             produitNom: selectedProduit.nom,
             prixUnitaire: parseFloat(selectedProduit.prix),
-            quantite: qte,  // = poids en kg (0 = pas encore pesé)
+            quantite: 0,           // = poids en kg, saisi plus tard
+            nombreParts: qte,      // = nombre de parts commandées (0 = vendu au poids seul)
             unite: 'kg',
             aPeser: true,
-            montantPese: qte > 0 ? Math.round(qte * parseFloat(selectedProduit.prix) * 100) / 100 : 0,
+            montantPese: 0,
             commentaire: ''
         });
     } else {
@@ -182,6 +186,7 @@ document.getElementById('btnAjouterProduit').addEventListener('click', () => {
                 produitNom: selectedProduit.nom,
                 prixUnitaire: parseFloat(selectedProduit.prix),
                 quantite: qte || 1,
+                nombreParts: 0,
                 unite: selectedProduit.unite || 'pièce',
                 aPeser: false,
                 montantPese: 0,
@@ -238,7 +243,11 @@ function renderLignes() {
         tr.className = 'group hover:bg-gray-50/50';
 
         if (l.aPeser) {
-            // Ligne "à peser" : champ poids en kg
+            // Ligne "à peser" : on saisit le nombre de parts. Le poids est renseigné plus tard
+            // (à la pesée), depuis la liste des commandes.
+            const poidsInfo = l.quantite > 0
+                ? `<div class="text-[10px] text-gray-400 mt-0.5">${l.quantite} kg pesé</div>`
+                : '';
             tr.innerHTML = `
                 <td class="py-3 px-5 text-gray-700">
                     ${l.produitNom}
@@ -246,11 +255,12 @@ function renderLignes() {
                 </td>
                 <td class="py-3 px-3 text-center">
                     <div class="flex items-center justify-center gap-1">
-                        <input type="number" class="w-20 text-center rounded-lg border border-amber-300 bg-amber-50 py-1.5 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30"
-                               value="${l.quantite || ''}" min="0" step="0.01" placeholder="0.00"
-                               onchange="updatePoids(${i}, this.value)">
-                        <span class="text-xs text-gray-400">kg</span>
+                        <input type="number" class="w-16 text-center rounded-lg border border-gray-200 py-1.5 text-sm outline-none focus:border-blue-400"
+                               value="${l.nombreParts || ''}" min="0" step="1" placeholder="0"
+                               onchange="updateParts(${i}, this.value)">
+                        <span class="text-xs text-gray-400">parts</span>
                     </div>
+                    ${poidsInfo}
                 </td>
                 <td class="py-3 px-3 text-right text-gray-500">${l.prixUnitaire.toFixed(2)} €/kg</td>
                 <td class="py-3 px-3 text-right">${montantDisplay}</td>
@@ -308,6 +318,13 @@ function updatePoids(i, v) {
     renderLignes();
 }
 
+function updateParts(i, v) {
+    // Nombre de parts (produit à peser) : informatif, n'affecte pas le montant.
+    // 0 autorisé (produit vendu au poids seul) : la ligne reste.
+    lignes[i].nombreParts = parseFloat(v) || 0;
+    renderLignes();
+}
+
 function removeLigne(i) {
     lignes.splice(i, 1);
     renderLignes();
@@ -324,10 +341,11 @@ function updateRecap(total) {
     let html = '<div class="space-y-2 mb-4">';
     lignes.forEach(l => {
         if (l.aPeser) {
+            const partsLabel = l.nombreParts > 0 ? `${l.nombreParts} part${l.nombreParts > 1 ? 's' : ''} · ` : '';
             if (l.quantite > 0) {
-                html += `<div class="flex justify-between text-sm"><span class="text-gray-600">${l.quantite} kg × ${l.produitNom}</span><span class="font-medium text-gray-800">${l.montantPese.toFixed(2)} €</span></div>`;
+                html += `<div class="flex justify-between text-sm"><span class="text-gray-600">${partsLabel}${l.produitNom} <span class="text-gray-400">(${l.quantite} kg)</span></span><span class="font-medium text-gray-800">${l.montantPese.toFixed(2)} €</span></div>`;
             } else {
-                html += `<div class="flex justify-between text-sm"><span class="text-gray-600">${l.produitNom}</span><span class="text-amber-500 font-medium">À peser</span></div>`;
+                html += `<div class="flex justify-between text-sm"><span class="text-gray-600">${partsLabel}${l.produitNom}</span><span class="text-amber-500 font-medium">À peser</span></div>`;
             }
         } else {
             const m = l.quantite * l.prixUnitaire;

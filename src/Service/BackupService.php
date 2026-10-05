@@ -103,11 +103,11 @@ class BackupService
 
                 foreach ($cmd['lignes'] ?? [] as $l) {
                     $this->conn->executeStatement(
-                        'INSERT INTO lignes_commande (id, commande_id, produit_code, produit_nom, quantite, prix_unitaire, unite, a_peser, montant_pese, commentaire, produit_fait) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        'INSERT INTO lignes_commande (id, commande_id, produit_code, produit_nom, quantite, prix_unitaire, unite, a_peser, montant_pese, nombre_parts, commentaire, produit_fait) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                         [
                             $l['id'], $l['commande_id'], $l['produit_code'], $l['produit_nom'],
                             $l['quantite'], $l['prix_unitaire'], $l['unite'] ?? 'pièce',
-                            $l['a_peser'] ?? 0, $l['montant_pese'] ?? 0,
+                            $l['a_peser'] ?? 0, $l['montant_pese'] ?? 0, $l['nombre_parts'] ?? 0,
                             $l['commentaire'] ?? null, $l['produit_fait'] ?? 0,
                         ]
                     );
