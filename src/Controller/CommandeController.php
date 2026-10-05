@@ -151,6 +151,7 @@ class CommandeController extends AbstractController
             $ligne->setUnite($ld['unite'] ?? 'pièce');
             $ligne->setAPeser(!empty($ld['aPeser']));
             $ligne->setMontantPese((float) ($ld['montantPese'] ?? 0));
+            $ligne->setNombreParts((float) ($ld['nombreParts'] ?? 0));
             $ligne->setCommentaire($ld['commentaire'] ?? null);
             $commande->addLigne($ligne);
         }

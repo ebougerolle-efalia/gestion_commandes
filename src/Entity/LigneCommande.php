@@ -39,6 +39,10 @@ class LigneCommande
     #[ORM\Column(type: 'float', options: ['default' => 0])]
     private float $montantPese = 0;
 
+    /** Nombre de parts commandées (produits à peser) — informatif, n'entre pas dans le prix */
+    #[ORM\Column(type: 'float', options: ['default' => 0])]
+    private float $nombreParts = 0;
+
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $commentaire = null;
 
@@ -70,6 +74,9 @@ class LigneCommande
 
     public function getMontantPese(): float { return $this->montantPese; }
     public function setMontantPese(float $v): self { $this->montantPese = $v; return $this; }
+
+    public function getNombreParts(): float { return $this->nombreParts; }
+    public function setNombreParts(float $v): self { $this->nombreParts = $v; return $this; }
 
     public function getCommentaire(): ?string { return $this->commentaire; }
     public function setCommentaire(?string $v): self { $this->commentaire = $v; return $this; }

@@ -119,7 +119,14 @@
                     {% if ligne.aPeser %}<span class="peser"> ⚖️</span>{% endif %}
                     {% if ligne.commentaire %}<div class="note">→ {{ ligne.commentaire }}</div>{% endif %}
                 </td>
-                <td class="c">{{ ligne.quantite }} {{ ligne.unite }}</td>
+                <td class="c">
+                    {% if ligne.aPeser %}
+                        {% if ligne.nombreParts > 0 %}{{ ligne.nombreParts }} part{{ ligne.nombreParts > 1 ? 's' : '' }}{% endif %}
+                        {% if ligne.quantite > 0 %}{% if ligne.nombreParts > 0 %}<br>{% endif %}<span class="peser">{{ ligne.quantite }} kg</span>{% elseif ligne.nombreParts == 0 %}<span class="peser">À peser</span>{% endif %}
+                    {% else %}
+                        {{ ligne.quantite }} {{ ligne.unite }}
+                    {% endif %}
+                </td>
                 <td class="r">{{ ligne.prixUnitaire|number_format(2, ',', ' ') }} €</td>
                 <td class="r">
                     {% if ligne.aPeser and ligne.montantPese > 0 %}
