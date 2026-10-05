@@ -31,7 +31,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  * @psalm-type ImportsConfig = list<string|array{
  *     resource: string,
  *     type?: string|null,
- *     ignore_errors?: bool,
+ *     ignore_errors?: bool|'not_found',
  * }>
  * @psalm-type ParametersConfig = array<string, scalar|\UnitEnum|array<scalar|\UnitEnum|array<mixed>|Param|null>|Param|null>
  * @psalm-type ArgumentsType = list<mixed>|array<string, mixed>
@@ -121,14 +121,14 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  * }
  * @psalm-type ServicesConfig = array{
  *     _defaults?: DefaultsType,
- *     _instanceof?: InstanceofType,
+ *     _instanceof?: array<class-string, InstanceofType>,
  *     ...<string, DefinitionType|AliasType|PrototypeType|StackType|ArgumentsType|null>
  * }
  * @psalm-type ExtensionType = array<string, mixed>
  * @psalm-type FrameworkConfig = array{
  *     secret?: scalar|Param|null,
  *     http_method_override?: bool|Param, // Set true to enable support for the '_method' request parameter to determine the intended HTTP method on POST requests. // Default: false
- *     allowed_http_method_override?: list<string|Param>|null,
+ *     allowed_http_method_override?: null|list<string|Param>,
  *     trust_x_sendfile_type_header?: scalar|Param|null, // Set true to enable support for xsendfile in binary file responses. // Default: "%env(bool:default::SYMFONY_TRUST_X_SENDFILE_TYPE_HEADER)%"
  *     ide?: scalar|Param|null, // Default: "%env(default::SYMFONY_IDE)%"
  *     test?: bool|Param,
@@ -136,9 +136,9 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     set_locale_from_accept_language?: bool|Param, // Whether to use the Accept-Language HTTP header to set the Request locale (only when the "_locale" request attribute is not passed). // Default: false
  *     set_content_language_from_locale?: bool|Param, // Whether to set the Content-Language HTTP header on the Response using the Request locale. // Default: false
  *     enabled_locales?: list<scalar|Param|null>,
- *     trusted_hosts?: list<scalar|Param|null>,
+ *     trusted_hosts?: Param|string|list<scalar|Param|null>,
  *     trusted_proxies?: mixed, // Default: ["%env(default::SYMFONY_TRUSTED_PROXIES)%"]
- *     trusted_headers?: list<scalar|Param|null>,
+ *     trusted_headers?: Param|string|list<scalar|Param|null>,
  *     error_controller?: scalar|Param|null, // Default: "error_controller"
  *     handle_all_throwables?: bool|Param, // HttpKernel will handle all kinds of \Throwable. // Default: true
  *     csrf_protection?: bool|array{
@@ -202,23 +202,23 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *                 property?: scalar|Param|null,
  *                 service?: scalar|Param|null,
  *             },
- *             supports?: list<scalar|Param|null>,
+ *             supports?: Param|string|list<scalar|Param|null>,
  *             definition_validators?: list<scalar|Param|null>,
  *             support_strategy?: scalar|Param|null,
- *             initial_marking?: list<scalar|Param|null>,
- *             events_to_dispatch?: list<string|Param>|null,
- *             places?: list<array{ // Default: []
+ *             initial_marking?: \BackedEnum|Param|string|list<scalar|Param|null>,
+ *             events_to_dispatch?: null|list<string|Param>,
+ *             places?: Param|string|list<array{ // Default: []
  *                 name?: scalar|Param|null,
  *                 metadata?: array<string, mixed>,
  *             }>,
  *             transitions?: list<array{ // Default: []
  *                 name?: string|Param,
  *                 guard?: string|Param, // An expression to block the transition.
- *                 from?: list<array{ // Default: []
+ *                 from?: \BackedEnum|Param|string|list<array{ // Default: []
  *                     place?: string|Param,
  *                     weight?: int|Param, // Default: 1
  *                 }>,
- *                 to?: list<array{ // Default: []
+ *                 to?: \BackedEnum|Param|string|list<array{ // Default: []
  *                     place?: string|Param,
  *                     weight?: int|Param, // Default: 1
  *                 }>,
@@ -261,7 +261,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     },
  *     request?: bool|array{ // Request configuration
  *         enabled?: bool|Param, // Default: false
- *         formats?: array<string, string|list<scalar|Param|null>>,
+ *         formats?: array<string, Param|string|list<scalar|Param|null>>,
  *     },
  *     assets?: bool|array{ // Assets configuration
  *         enabled?: bool|Param, // Default: true
@@ -271,7 +271,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         version_format?: scalar|Param|null, // Default: "%%s?%%s"
  *         json_manifest_path?: scalar|Param|null, // Default: null
  *         base_path?: scalar|Param|null, // Default: ""
- *         base_urls?: list<scalar|Param|null>,
+ *         base_urls?: Param|string|list<scalar|Param|null>,
  *         packages?: array<string, array{ // Default: []
  *             strict_mode?: bool|Param, // Throw an exception if an entry is missing from the manifest.json. // Default: false
  *             version_strategy?: scalar|Param|null, // Default: null
@@ -279,12 +279,12 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             version_format?: scalar|Param|null, // Default: null
  *             json_manifest_path?: scalar|Param|null, // Default: null
  *             base_path?: scalar|Param|null, // Default: ""
- *             base_urls?: list<scalar|Param|null>,
+ *             base_urls?: Param|string|list<scalar|Param|null>,
  *         }>,
  *     },
  *     asset_mapper?: bool|array{ // Asset Mapper configuration
  *         enabled?: bool|Param, // Default: false
- *         paths?: array<string, scalar|Param|null>,
+ *         paths?: Param|string|array<string, scalar|Param|null>,
  *         excluded_patterns?: list<scalar|Param|null>,
  *         exclude_dotfiles?: bool|Param, // If true, any files starting with "." will be excluded from the asset mapper. // Default: true
  *         server?: bool|Param, // If true, a "dev server" will return the assets from the public directory (true in "debug" mode only by default). // Default: true
@@ -303,7 +303,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     },
  *     translator?: bool|array{ // Translator configuration
  *         enabled?: bool|Param, // Default: false
- *         fallbacks?: list<scalar|Param|null>,
+ *         fallbacks?: Param|string|list<scalar|Param|null>,
  *         logging?: bool|Param, // Default: false
  *         formatter?: scalar|Param|null, // Default: "translator.formatter.default"
  *         cache_dir?: scalar|Param|null, // Default: "%kernel.cache_dir%/translations"
@@ -322,7 +322,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             domains?: list<scalar|Param|null>,
  *             locales?: list<scalar|Param|null>,
  *         }>,
- *         globals?: array<string, string|array{ // Default: []
+ *         globals?: array<string, Param|string|array{ // Default: []
  *             value?: mixed,
  *             message?: string|Param,
  *             parameters?: array<string, scalar|Param|null>,
@@ -333,7 +333,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         enabled?: bool|Param, // Default: true
  *         cache?: scalar|Param|null, // Deprecated: Setting the "framework.validation.cache.cache" configuration option is deprecated. It will be removed in version 8.0.
  *         enable_attributes?: bool|Param, // Default: true
- *         static_method?: list<scalar|Param|null>,
+ *         static_method?: Param|string|list<scalar|Param|null>,
  *         translation_domain?: scalar|Param|null, // Default: "validators"
  *         email_validation_mode?: "html5"|"html5-allow-no-tld"|"strict"|"loose"|Param, // Default: "html5"
  *         mapping?: array{
@@ -396,7 +396,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         default_doctrine_dbal_provider?: scalar|Param|null, // Default: "database_connection"
  *         default_pdo_provider?: scalar|Param|null, // Default: null
  *         pools?: array<string, array{ // Default: []
- *             adapters?: list<scalar|Param|null>,
+ *             adapters?: Param|string|list<scalar|Param|null>,
  *             tags?: scalar|Param|null, // Default: null
  *             public?: bool|Param, // Default: false
  *             default_lifetime?: scalar|Param|null, // Default lifetime of the pool.
@@ -417,17 +417,17 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     web_link?: bool|array{ // Web links configuration
  *         enabled?: bool|Param, // Default: false
  *     },
- *     lock?: bool|string|array{ // Lock configuration
+ *     lock?: Param|bool|string|array{ // Lock configuration
  *         enabled?: bool|Param, // Default: false
- *         resources?: array<string, string|list<scalar|Param|null>>,
+ *         resources?: Param|string|array<string, Param|string|list<scalar|Param|null>>,
  *     },
- *     semaphore?: bool|string|array{ // Semaphore configuration
+ *     semaphore?: Param|bool|string|array{ // Semaphore configuration
  *         enabled?: bool|Param, // Default: false
- *         resources?: array<string, scalar|Param|null>,
+ *         resources?: Param|string|array<string, scalar|Param|null>,
  *     },
  *     messenger?: bool|array{ // Messenger configuration
  *         enabled?: bool|Param, // Default: false
- *         routing?: array<string, string|array{ // Default: []
+ *         routing?: array<string, Param|string|array{ // Default: []
  *             senders?: list<scalar|Param|null>,
  *         }>,
  *         serializer?: array{
@@ -437,12 +437,12 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *                 context?: array<string, mixed>,
  *             },
  *         },
- *         transports?: array<string, string|array{ // Default: []
+ *         transports?: array<string, Param|string|array{ // Default: []
  *             dsn?: scalar|Param|null,
  *             serializer?: scalar|Param|null, // Service id of a custom serializer to use. // Default: null
  *             options?: array<string, mixed>,
  *             failure_transport?: scalar|Param|null, // Transport name to send failed messages to (after all retries have failed). // Default: null
- *             retry_strategy?: string|array{
+ *             retry_strategy?: Param|string|array{
  *                 service?: scalar|Param|null, // Service id to override the retry strategy entirely. // Default: null
  *                 max_retries?: int|Param, // Default: 3
  *                 delay?: int|Param, // Time in ms to delay (or the initial value when multiplier is used). // Default: 1000
@@ -453,15 +453,15 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             rate_limiter?: scalar|Param|null, // Rate limiter name to use when processing messages. // Default: null
  *         }>,
  *         failure_transport?: scalar|Param|null, // Transport name to send failed messages to (after all retries have failed). // Default: null
- *         stop_worker_on_signals?: list<scalar|Param|null>,
+ *         stop_worker_on_signals?: Param|int|string|list<scalar|Param|null>,
  *         default_bus?: scalar|Param|null, // Default: null
  *         buses?: array<string, array{ // Default: {"messenger.bus.default":{"default_middleware":{"enabled":true,"allow_no_handlers":false,"allow_no_senders":true},"middleware":[]}}
- *             default_middleware?: bool|string|array{
+ *             default_middleware?: Param|bool|string|array{
  *                 enabled?: bool|Param, // Default: true
  *                 allow_no_handlers?: bool|Param, // Default: false
  *                 allow_no_senders?: bool|Param, // Default: true
  *             },
- *             middleware?: list<string|array{ // Default: []
+ *             middleware?: Param|string|list<Param|string|array{ // Default: []
  *                 id?: scalar|Param|null,
  *                 arguments?: list<mixed>,
  *             }>,
@@ -472,7 +472,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     },
  *     disallow_search_engine_index?: bool|Param, // Enabled by default when debug is enabled. // Default: true
  *     http_client?: bool|array{ // HTTP Client configuration
- *         enabled?: bool|Param, // Default: false
+ *         enabled?: bool|Param, // Default: true
  *         max_host_connections?: int|Param, // The maximum number of connections to a single host.
  *         default_options?: array{
  *             headers?: array<string, mixed>,
@@ -510,9 +510,9 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             retry_failed?: bool|array{
  *                 enabled?: bool|Param, // Default: false
  *                 retry_strategy?: scalar|Param|null, // service id to override the retry strategy. // Default: null
- *                 http_codes?: array<string, array{ // Default: []
+ *                 http_codes?: Param|int|string|array<string, array{ // Default: []
  *                     code?: int|Param,
- *                     methods?: list<string|Param>,
+ *                     methods?: Param|string|list<string|Param>,
  *                 }>,
  *                 max_retries?: int|Param, // Default: 3
  *                 delay?: int|Param, // Time in ms to delay (or the initial value when multiplier is used). // Default: 1000
@@ -522,7 +522,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             },
  *         },
  *         mock_response_factory?: scalar|Param|null, // The id of the service that should generate mock responses. It should be either an invokable or an iterable.
- *         scoped_clients?: array<string, string|array{ // Default: []
+ *         scoped_clients?: array<string, Param|string|array{ // Default: []
  *             scope?: scalar|Param|null, // The regular expression that the request URL must match before adding the other options. When none is provided, the base URI is used instead.
  *             base_uri?: scalar|Param|null, // The URI to resolve relative URLs, following rules in RFC 3985, section 2.
  *             auth_basic?: scalar|Param|null, // An HTTP Basic authentication "username:password".
@@ -563,9 +563,9 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             retry_failed?: bool|array{
  *                 enabled?: bool|Param, // Default: false
  *                 retry_strategy?: scalar|Param|null, // service id to override the retry strategy. // Default: null
- *                 http_codes?: array<string, array{ // Default: []
+ *                 http_codes?: Param|int|string|array<string, array{ // Default: []
  *                     code?: int|Param,
- *                     methods?: list<string|Param>,
+ *                     methods?: Param|string|list<string|Param>,
  *                 }>,
  *                 max_retries?: int|Param, // Default: 3
  *                 delay?: int|Param, // Time in ms to delay (or the initial value when multiplier is used). // Default: 1000
@@ -582,10 +582,10 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         transports?: array<string, scalar|Param|null>,
  *         envelope?: array{ // Mailer Envelope configuration
  *             sender?: scalar|Param|null,
- *             recipients?: list<scalar|Param|null>,
- *             allowed_recipients?: list<scalar|Param|null>,
+ *             recipients?: Param|string|list<scalar|Param|null>,
+ *             allowed_recipients?: Param|string|list<scalar|Param|null>,
  *         },
- *         headers?: array<string, string|array{ // Default: []
+ *         headers?: array<string, Param|string|array{ // Default: []
  *             value?: mixed,
  *         }>,
  *         dkim_signer?: bool|array{ // DKIM signer configuration
@@ -622,7 +622,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         chatter_transports?: array<string, scalar|Param|null>,
  *         texter_transports?: array<string, scalar|Param|null>,
  *         notification_on_failed_messages?: bool|Param, // Default: false
- *         channel_policy?: array<string, string|list<scalar|Param|null>>,
+ *         channel_policy?: array<string, Param|string|list<scalar|Param|null>>,
  *         admin_recipients?: list<array{ // Default: []
  *             email?: scalar|Param|null,
  *             phone?: scalar|Param|null, // Default: ""
@@ -635,7 +635,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             cache_pool?: scalar|Param|null, // The cache pool to use for storing the current limiter state. // Default: "cache.rate_limiter"
  *             storage_service?: scalar|Param|null, // The service ID of a custom storage implementation, this precedes any configured "cache_pool". // Default: null
  *             policy?: "fixed_window"|"token_bucket"|"sliding_window"|"compound"|"no_limit"|Param, // The algorithm to be used by this limiter.
- *             limiters?: list<scalar|Param|null>,
+ *             limiters?: Param|string|list<scalar|Param|null>,
  *             limit?: int|Param, // The maximum allowed hits in a fixed interval or burst.
  *             interval?: scalar|Param|null, // Configures the fixed interval if "policy" is set to "fixed_window" or "sliding_window". The value must be a number followed by "second", "minute", "hour", "day", "week" or "month" (or their plural equivalent).
  *             rate?: array{ // Configures the fill rate if "policy" is set to "token_bucket".
@@ -658,20 +658,20 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             allow_safe_elements?: bool|Param, // Allows "safe" elements and attributes. // Default: false
  *             allow_static_elements?: bool|Param, // Allows all static elements and attributes from the W3C Sanitizer API standard. // Default: false
  *             allow_elements?: array<string, mixed>,
- *             block_elements?: list<string|Param>,
- *             drop_elements?: list<string|Param>,
+ *             block_elements?: Param|string|list<string|Param>,
+ *             drop_elements?: Param|string|list<string|Param>,
  *             allow_attributes?: array<string, mixed>,
  *             drop_attributes?: array<string, mixed>,
  *             force_attributes?: array<string, array<string, string|Param>>,
  *             force_https_urls?: bool|Param, // Transforms URLs using the HTTP scheme to use the HTTPS scheme instead. // Default: false
- *             allowed_link_schemes?: list<string|Param>,
- *             allowed_link_hosts?: list<string|Param>|null,
+ *             allowed_link_schemes?: Param|string|list<string|Param>,
+ *             allowed_link_hosts?: Param|null|string|list<string|Param>,
  *             allow_relative_links?: bool|Param, // Allows relative URLs to be used in links href attributes. // Default: false
- *             allowed_media_schemes?: list<string|Param>,
- *             allowed_media_hosts?: list<string|Param>|null,
+ *             allowed_media_schemes?: Param|string|list<string|Param>,
+ *             allowed_media_hosts?: Param|null|string|list<string|Param>,
  *             allow_relative_medias?: bool|Param, // Allows relative URLs to be used in media source attributes (img, audio, video, ...). // Default: false
- *             with_attribute_sanitizers?: list<string|Param>,
- *             without_attribute_sanitizers?: list<string|Param>,
+ *             with_attribute_sanitizers?: Param|string|list<string|Param>,
+ *             without_attribute_sanitizers?: Param|string|list<string|Param>,
  *             max_input_length?: int|Param, // The maximum length allowed for the sanitized input. // Default: 0
  *         }>,
  *     },
@@ -680,10 +680,10 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         message_bus?: scalar|Param|null, // The message bus to use. // Default: "messenger.default_bus"
  *         routing?: array<string, array{ // Default: []
  *             service?: scalar|Param|null,
- *             secret?: scalar|Param|null, // Default: ""
+ *             secret?: scalar|Param|null, // The secret used to verify incoming request signatures. It must be set in production: with an empty value, depending on the parser, requests from any sender are accepted or every request is rejected. // Default: ""
  *         }>,
  *     },
- *     remote-event?: bool|array{ // RemoteEvent configuration
+ *     remote_event?: bool|array{ // RemoteEvent configuration
  *         enabled?: bool|Param, // Default: false
  *     },
  *     json_streamer?: bool|array{ // JSON streamer configuration
@@ -696,6 +696,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         id?: scalar|Param|null,
  *         type?: scalar|Param|null,
  *         value?: mixed,
+ *         ...<string, mixed>
  *     }>,
  *     autoescape_service?: scalar|Param|null, // Default: null
  *     autoescape_service_method?: scalar|Param|null, // Default: null
@@ -707,7 +708,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     auto_reload?: scalar|Param|null,
  *     optimizations?: int|Param,
  *     default_path?: scalar|Param|null, // The default path used to load templates. // Default: "%kernel.project_dir%/templates"
- *     file_name_pattern?: list<scalar|Param|null>,
+ *     file_name_pattern?: Param|string|list<scalar|Param|null>,
  *     paths?: array<string, mixed>,
  *     date?: array{ // The default format options used by the date filter.
  *         format?: scalar|Param|null, // Default: "F j, Y H:i"
@@ -726,7 +727,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  * @psalm-type DoctrineConfig = array{
  *     dbal?: array{
  *         default_connection?: scalar|Param|null,
- *         types?: array<string, string|array{ // Default: []
+ *         types?: array<string, Param|string|array{ // Default: []
  *             class?: scalar|Param|null,
  *             commented?: bool|Param, // Deprecated: The doctrine-bundle type commenting features were removed; the corresponding config parameter was deprecated in 2.0 and will be dropped in 3.0.
  *         }>,
@@ -813,6 +814,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *                 use_savepoints?: bool|Param, // Use savepoints for nested transactions
  *                 instancename?: scalar|Param|null, // Optional parameter, complete whether to add the INSTANCE_NAME parameter in the connection. It is generally used to connect to an Oracle RAC server to select the name of a particular instance.
  *                 connectstring?: scalar|Param|null, // Complete Easy Connect connection descriptor, see https://docs.oracle.com/database/121/NETAG/naming.htm.When using this option, you will still need to provide the user and password parameters, but the other parameters will no longer be used. Note that when using this parameter, the getHost and getPort methods from Doctrine\DBAL\Connection will no longer function as expected.
+ *                 ...<string, mixed>
  *             }>,
  *             replicas?: array<string, array{ // Default: []
  *                 url?: scalar|Param|null, // A URL with connection information; any parameter value parsed from this string will override explicitly set parameters
@@ -845,8 +847,11 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *                 use_savepoints?: bool|Param, // Use savepoints for nested transactions
  *                 instancename?: scalar|Param|null, // Optional parameter, complete whether to add the INSTANCE_NAME parameter in the connection. It is generally used to connect to an Oracle RAC server to select the name of a particular instance.
  *                 connectstring?: scalar|Param|null, // Complete Easy Connect connection descriptor, see https://docs.oracle.com/database/121/NETAG/naming.htm.When using this option, you will still need to provide the user and password parameters, but the other parameters will no longer be used. Note that when using this parameter, the getHost and getPort methods from Doctrine\DBAL\Connection will no longer function as expected.
+ *                 ...<string, mixed>
  *             }>,
+ *             ...<string, mixed>
  *         }>,
+ *         ...<string, mixed>
  *     },
  *     orm?: array{
  *         default_entity_manager?: scalar|Param|null,
@@ -861,17 +866,17 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             evict_cache?: bool|Param, // Set to true to fetch the entity from the database instead of using the cache, if any // Default: false
  *         },
  *         entity_managers?: array<string, array{ // Default: []
- *             query_cache_driver?: string|array{
+ *             query_cache_driver?: Param|string|array{
  *                 type?: scalar|Param|null, // Default: null
  *                 id?: scalar|Param|null,
  *                 pool?: scalar|Param|null,
  *             },
- *             metadata_cache_driver?: string|array{
+ *             metadata_cache_driver?: Param|string|array{
  *                 type?: scalar|Param|null, // Default: null
  *                 id?: scalar|Param|null,
  *                 pool?: scalar|Param|null,
  *             },
- *             result_cache_driver?: string|array{
+ *             result_cache_driver?: Param|string|array{
  *                 type?: scalar|Param|null, // Default: null
  *                 id?: scalar|Param|null,
  *                 pool?: scalar|Param|null,
@@ -885,6 +890,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *                         }>,
  *                     }>,
  *                 }>,
+ *                 ...<string, mixed>
  *             },
  *             connection?: scalar|Param|null,
  *             class_metadata_factory_name?: scalar|Param|null, // Default: "Doctrine\\ORM\\Mapping\\ClassMetadataFactory"
@@ -900,7 +906,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *             report_fields_where_declared?: bool|Param, // Set to "true" to opt-in to the new mapping driver mode that was added in Doctrine ORM 2.16 and will be mandatory in ORM 3.0. See https://github.com/doctrine/orm/pull/10455. // Default: true
  *             validate_xml_mapping?: bool|Param, // Set to "true" to opt-in to the new mapping driver mode that was added in Doctrine ORM 2.14. See https://github.com/doctrine/orm/pull/6728. // Default: false
  *             second_level_cache?: array{
- *                 region_cache_driver?: string|array{
+ *                 region_cache_driver?: Param|string|array{
  *                     type?: scalar|Param|null, // Default: null
  *                     id?: scalar|Param|null,
  *                     pool?: scalar|Param|null,
@@ -911,7 +917,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *                 enabled?: bool|Param, // Default: true
  *                 factory?: scalar|Param|null,
  *                 regions?: array<string, array{ // Default: []
- *                     cache_driver?: string|array{
+ *                     cache_driver?: Param|string|array{
  *                         type?: scalar|Param|null, // Default: null
  *                         id?: scalar|Param|null,
  *                         pool?: scalar|Param|null,
@@ -929,7 +935,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *                 }>,
  *             },
  *             hydrators?: array<string, scalar|Param|null>,
- *             mappings?: array<string, bool|string|array{ // Default: []
+ *             mappings?: array<string, Param|bool|string|array{ // Default: []
  *                 mapping?: scalar|Param|null, // Default: true
  *                 type?: scalar|Param|null,
  *                 dir?: scalar|Param|null,
@@ -942,14 +948,16 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *                 numeric_functions?: array<string, scalar|Param|null>,
  *                 datetime_functions?: array<string, scalar|Param|null>,
  *             },
- *             filters?: array<string, string|array{ // Default: []
+ *             filters?: array<string, Param|string|array{ // Default: []
  *                 class?: scalar|Param|null,
  *                 enabled?: bool|Param, // Default: false
  *                 parameters?: array<string, mixed>,
+ *                 ...<string, mixed>
  *             }>,
  *             identity_generation_preferences?: array<string, scalar|Param|null>,
  *         }>,
  *         resolve_target_entities?: array<string, scalar|Param|null>,
+ *         ...<string, mixed>
  *     },
  * }
  * @psalm-type DoctrineMigrationsConfig = array{
@@ -981,6 +989,1071 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     generate_final_classes?: bool|Param, // Default: true
  *     generate_final_entities?: bool|Param, // Default: false
  * }
+ * @psalm-type SecurityConfig = array{
+ *     access_denied_url?: scalar|Param|null, // Default: null
+ *     session_fixation_strategy?: "none"|"migrate"|"invalidate"|Param, // Default: "migrate"
+ *     hide_user_not_found?: bool|Param, // Deprecated: The "hide_user_not_found" option is deprecated and will be removed in 8.0. Use the "expose_security_errors" option instead.
+ *     expose_security_errors?: \Symfony\Component\Security\Http\Authentication\ExposeSecurityLevel::None|\Symfony\Component\Security\Http\Authentication\ExposeSecurityLevel::AccountStatus|\Symfony\Component\Security\Http\Authentication\ExposeSecurityLevel::All|Param, // Default: "none"
+ *     erase_credentials?: bool|Param, // Default: true
+ *     access_decision_manager?: array{
+ *         strategy?: "affirmative"|"consensus"|"unanimous"|"priority"|Param,
+ *         service?: scalar|Param|null,
+ *         strategy_service?: scalar|Param|null,
+ *         allow_if_all_abstain?: bool|Param, // Default: false
+ *         allow_if_equal_granted_denied?: bool|Param, // Default: true
+ *     },
+ *     password_hashers?: array<string, Param|string|array{ // Default: []
+ *         algorithm?: scalar|Param|null,
+ *         migrate_from?: Param|string|list<scalar|Param|null>,
+ *         hash_algorithm?: scalar|Param|null, // Name of hashing algorithm for PBKDF2 (i.e. sha256, sha512, etc..) See hash_algos() for a list of supported algorithms. // Default: "sha512"
+ *         key_length?: scalar|Param|null, // Default: 40
+ *         ignore_case?: bool|Param, // Default: false
+ *         encode_as_base64?: bool|Param, // Default: true
+ *         iterations?: scalar|Param|null, // Default: 5000
+ *         cost?: int|Param, // Default: null
+ *         memory_cost?: scalar|Param|null, // Default: null
+ *         time_cost?: scalar|Param|null, // Default: null
+ *         id?: scalar|Param|null,
+ *     }>,
+ *     providers?: array<string, array{ // Default: []
+ *         id?: scalar|Param|null,
+ *         chain?: array{
+ *             providers?: Param|string|list<scalar|Param|null>,
+ *         },
+ *         entity?: array{
+ *             class?: scalar|Param|null, // The full entity class name of your user class.
+ *             property?: scalar|Param|null, // Default: null
+ *             manager_name?: scalar|Param|null, // Default: null
+ *         },
+ *         memory?: array{
+ *             users?: array<string, array{ // Default: []
+ *                 password?: scalar|Param|null, // Default: null
+ *                 roles?: Param|string|list<scalar|Param|null>,
+ *             }>,
+ *         },
+ *         ldap?: array{
+ *             service?: scalar|Param|null,
+ *             base_dn?: scalar|Param|null,
+ *             search_dn?: scalar|Param|null, // Default: null
+ *             search_password?: scalar|Param|null, // Default: null
+ *             extra_fields?: list<scalar|Param|null>,
+ *             default_roles?: Param|string|list<scalar|Param|null>,
+ *             role_fetcher?: scalar|Param|null, // Default: null
+ *             uid_key?: scalar|Param|null, // Default: "sAMAccountName"
+ *             filter?: scalar|Param|null, // Default: "({uid_key}={user_identifier})"
+ *             password_attribute?: scalar|Param|null, // Default: null
+ *         },
+ *     }>,
+ *     firewalls?: array<string, array{ // Default: []
+ *         pattern?: scalar|Param|null,
+ *         host?: scalar|Param|null,
+ *         methods?: Param|string|list<scalar|Param|null>,
+ *         security?: bool|Param, // Default: true
+ *         user_checker?: scalar|Param|null, // The UserChecker to use when authenticating users in this firewall. // Default: "security.user_checker"
+ *         request_matcher?: scalar|Param|null,
+ *         access_denied_url?: scalar|Param|null,
+ *         access_denied_handler?: scalar|Param|null,
+ *         entry_point?: scalar|Param|null, // An enabled authenticator name or a service id that implements "Symfony\Component\Security\Http\EntryPoint\AuthenticationEntryPointInterface".
+ *         provider?: scalar|Param|null,
+ *         stateless?: bool|Param, // Default: false
+ *         lazy?: bool|Param, // Default: false
+ *         context?: scalar|Param|null,
+ *         logout?: array{
+ *             enable_csrf?: bool|Param|null, // Default: null
+ *             csrf_token_id?: scalar|Param|null, // Default: "logout"
+ *             csrf_parameter?: scalar|Param|null, // Default: "_csrf_token"
+ *             csrf_token_manager?: scalar|Param|null,
+ *             path?: scalar|Param|null, // Default: "/logout"
+ *             target?: scalar|Param|null, // Default: "/"
+ *             invalidate_session?: bool|Param, // Default: true
+ *             clear_site_data?: Param|string|list<"*"|"cache"|"cookies"|"storage"|"executionContexts"|Param>,
+ *             delete_cookies?: Param|string|array<string, array{ // Default: []
+ *                 path?: scalar|Param|null, // Default: null
+ *                 domain?: scalar|Param|null, // Default: null
+ *                 secure?: scalar|Param|null, // Default: false
+ *                 samesite?: scalar|Param|null, // Default: null
+ *                 partitioned?: scalar|Param|null, // Default: false
+ *             }>,
+ *         },
+ *         switch_user?: array{
+ *             provider?: scalar|Param|null,
+ *             parameter?: scalar|Param|null, // Default: "_switch_user"
+ *             role?: scalar|Param|null, // Default: "ROLE_ALLOWED_TO_SWITCH"
+ *             target_route?: scalar|Param|null, // Default: null
+ *         },
+ *         required_badges?: list<scalar|Param|null>,
+ *         custom_authenticators?: list<scalar|Param|null>,
+ *         login_throttling?: array{
+ *             limiter?: scalar|Param|null, // A service id implementing "Symfony\Component\HttpFoundation\RateLimiter\RequestRateLimiterInterface".
+ *             max_attempts?: int|Param, // Default: 5
+ *             interval?: scalar|Param|null, // Default: "1 minute"
+ *             lock_factory?: scalar|Param|null, // The service ID of the lock factory used by the login rate limiter ("auto" to use the default one when the Lock component is configured, or null to disable locking). // Default: "auto"
+ *             cache_pool?: string|Param, // The cache pool to use for storing the limiter state // Default: "cache.rate_limiter"
+ *             storage_service?: string|Param, // The service ID of a custom storage implementation, this precedes any configured "cache_pool" // Default: null
+ *         },
+ *         x509?: array{
+ *             provider?: scalar|Param|null,
+ *             user?: scalar|Param|null, // Default: "SSL_CLIENT_S_DN_Email"
+ *             credentials?: scalar|Param|null, // Default: "SSL_CLIENT_S_DN"
+ *             user_identifier?: scalar|Param|null, // Default: "emailAddress"
+ *         },
+ *         remote_user?: array{
+ *             provider?: scalar|Param|null,
+ *             user?: scalar|Param|null, // Default: "REMOTE_USER"
+ *         },
+ *         login_link?: array{
+ *             check_route?: scalar|Param|null, // Route that will validate the login link - e.g. "app_login_link_verify".
+ *             check_post_only?: scalar|Param|null, // If true, only HTTP POST requests to "check_route" will be handled by the authenticator. // Default: false
+ *             signature_properties?: list<scalar|Param|null>,
+ *             lifetime?: int|Param, // The lifetime of the login link in seconds. // Default: 600
+ *             max_uses?: int|Param, // Max number of times a login link can be used - null means unlimited within lifetime. // Default: null
+ *             used_link_cache?: scalar|Param|null, // Cache service id used to expired links of max_uses is set.
+ *             success_handler?: scalar|Param|null, // A service id that implements Symfony\Component\Security\Http\Authentication\AuthenticationSuccessHandlerInterface.
+ *             failure_handler?: scalar|Param|null, // A service id that implements Symfony\Component\Security\Http\Authentication\AuthenticationFailureHandlerInterface.
+ *             provider?: scalar|Param|null, // The user provider to load users from.
+ *             secret?: scalar|Param|null, // Default: "%kernel.secret%"
+ *             always_use_default_target_path?: bool|Param, // Default: false
+ *             default_target_path?: scalar|Param|null, // Default: "/"
+ *             login_path?: scalar|Param|null, // Default: "/login"
+ *             target_path_parameter?: scalar|Param|null, // Default: "_target_path"
+ *             use_referer?: bool|Param, // Default: false
+ *             failure_path?: scalar|Param|null, // Default: null
+ *             failure_forward?: bool|Param, // Default: false
+ *             failure_path_parameter?: scalar|Param|null, // Default: "_failure_path"
+ *         },
+ *         form_login?: array{
+ *             provider?: scalar|Param|null,
+ *             remember_me?: bool|Param, // Default: true
+ *             success_handler?: scalar|Param|null,
+ *             failure_handler?: scalar|Param|null,
+ *             check_path?: scalar|Param|null, // Default: "/login_check"
+ *             use_forward?: bool|Param, // Default: false
+ *             login_path?: scalar|Param|null, // Default: "/login"
+ *             username_parameter?: scalar|Param|null, // Default: "_username"
+ *             password_parameter?: scalar|Param|null, // Default: "_password"
+ *             csrf_parameter?: scalar|Param|null, // Default: "_csrf_token"
+ *             csrf_token_id?: scalar|Param|null, // Default: "authenticate"
+ *             enable_csrf?: bool|Param, // Default: false
+ *             post_only?: bool|Param, // Default: true
+ *             form_only?: bool|Param, // Default: false
+ *             always_use_default_target_path?: bool|Param, // Default: false
+ *             default_target_path?: scalar|Param|null, // Default: "/"
+ *             target_path_parameter?: scalar|Param|null, // Default: "_target_path"
+ *             use_referer?: bool|Param, // Default: false
+ *             failure_path?: scalar|Param|null, // Default: null
+ *             failure_forward?: bool|Param, // Default: false
+ *             failure_path_parameter?: scalar|Param|null, // Default: "_failure_path"
+ *         },
+ *         form_login_ldap?: array{
+ *             provider?: scalar|Param|null,
+ *             remember_me?: bool|Param, // Default: true
+ *             success_handler?: scalar|Param|null,
+ *             failure_handler?: scalar|Param|null,
+ *             check_path?: scalar|Param|null, // Default: "/login_check"
+ *             use_forward?: bool|Param, // Default: false
+ *             login_path?: scalar|Param|null, // Default: "/login"
+ *             username_parameter?: scalar|Param|null, // Default: "_username"
+ *             password_parameter?: scalar|Param|null, // Default: "_password"
+ *             csrf_parameter?: scalar|Param|null, // Default: "_csrf_token"
+ *             csrf_token_id?: scalar|Param|null, // Default: "authenticate"
+ *             enable_csrf?: bool|Param, // Default: false
+ *             post_only?: bool|Param, // Default: true
+ *             form_only?: bool|Param, // Default: false
+ *             always_use_default_target_path?: bool|Param, // Default: false
+ *             default_target_path?: scalar|Param|null, // Default: "/"
+ *             target_path_parameter?: scalar|Param|null, // Default: "_target_path"
+ *             use_referer?: bool|Param, // Default: false
+ *             failure_path?: scalar|Param|null, // Default: null
+ *             failure_forward?: bool|Param, // Default: false
+ *             failure_path_parameter?: scalar|Param|null, // Default: "_failure_path"
+ *             service?: scalar|Param|null, // Default: "ldap"
+ *             dn_string?: scalar|Param|null, // Default: "{user_identifier}"
+ *             query_string?: scalar|Param|null,
+ *             search_dn?: scalar|Param|null, // Default: ""
+ *             search_password?: scalar|Param|null, // Default: ""
+ *         },
+ *         json_login?: array{
+ *             provider?: scalar|Param|null,
+ *             remember_me?: bool|Param, // Default: true
+ *             success_handler?: scalar|Param|null,
+ *             failure_handler?: scalar|Param|null,
+ *             check_path?: scalar|Param|null, // Default: "/login_check"
+ *             use_forward?: bool|Param, // Default: false
+ *             login_path?: scalar|Param|null, // Default: "/login"
+ *             username_path?: scalar|Param|null, // Default: "username"
+ *             password_path?: scalar|Param|null, // Default: "password"
+ *         },
+ *         json_login_ldap?: array{
+ *             provider?: scalar|Param|null,
+ *             remember_me?: bool|Param, // Default: true
+ *             success_handler?: scalar|Param|null,
+ *             failure_handler?: scalar|Param|null,
+ *             check_path?: scalar|Param|null, // Default: "/login_check"
+ *             use_forward?: bool|Param, // Default: false
+ *             login_path?: scalar|Param|null, // Default: "/login"
+ *             username_path?: scalar|Param|null, // Default: "username"
+ *             password_path?: scalar|Param|null, // Default: "password"
+ *             service?: scalar|Param|null, // Default: "ldap"
+ *             dn_string?: scalar|Param|null, // Default: "{user_identifier}"
+ *             query_string?: scalar|Param|null,
+ *             search_dn?: scalar|Param|null, // Default: ""
+ *             search_password?: scalar|Param|null, // Default: ""
+ *         },
+ *         access_token?: array{
+ *             provider?: scalar|Param|null,
+ *             remember_me?: bool|Param, // Default: true
+ *             success_handler?: scalar|Param|null,
+ *             failure_handler?: scalar|Param|null,
+ *             realm?: scalar|Param|null, // Default: null
+ *             token_extractors?: Param|string|list<scalar|Param|null>,
+ *             token_handler?: Param|string|array{
+ *                 id?: scalar|Param|null,
+ *                 oidc_user_info?: Param|string|array{
+ *                     base_uri?: scalar|Param|null, // Base URI of the userinfo endpoint on the OIDC server, or the OIDC server URI to use the discovery (require "discovery" to be configured).
+ *                     discovery?: array{ // Enable the OIDC discovery.
+ *                         cache?: array{
+ *                             id?: scalar|Param|null, // Cache service id to use to cache the OIDC discovery configuration.
+ *                         },
+ *                     },
+ *                     claim?: scalar|Param|null, // Claim which contains the user identifier (e.g. sub, email, etc.). // Default: "sub"
+ *                     client?: scalar|Param|null, // HttpClient service id to use to call the OIDC server.
+ *                 },
+ *                 oidc?: array{
+ *                     discovery?: array{ // Enable the OIDC discovery.
+ *                         base_uri?: Param|string|list<scalar|Param|null>,
+ *                         cache?: array{
+ *                             id?: scalar|Param|null, // Cache service id to use to cache the OIDC discovery configuration.
+ *                         },
+ *                     },
+ *                     claim?: scalar|Param|null, // Claim which contains the user identifier (e.g.: sub, email..). // Default: "sub"
+ *                     audience?: scalar|Param|null, // Audience set in the token, for validation purpose.
+ *                     issuers?: list<scalar|Param|null>,
+ *                     algorithm?: array<mixed>,
+ *                     algorithms?: list<scalar|Param|null>,
+ *                     key?: scalar|Param|null, // Deprecated: The "key" option is deprecated and will be removed in 8.0. Use the "keyset" option instead. // JSON-encoded JWK used to sign the token (must contain a "kty" key).
+ *                     keyset?: scalar|Param|null, // JSON-encoded JWKSet used to sign the token (must contain a list of valid public keys).
+ *                     encryption?: bool|array{
+ *                         enabled?: bool|Param, // Default: false
+ *                         enforce?: bool|Param, // When enabled, the token shall be encrypted. // Default: false
+ *                         algorithms?: list<scalar|Param|null>,
+ *                         keyset?: scalar|Param|null, // JSON-encoded JWKSet used to decrypt the token (must contain a list of valid private keys).
+ *                     },
+ *                 },
+ *                 cas?: array{
+ *                     validation_url?: scalar|Param|null, // CAS server validation URL
+ *                     prefix?: scalar|Param|null, // CAS prefix // Default: "cas"
+ *                     http_client?: scalar|Param|null, // HTTP Client service // Default: null
+ *                 },
+ *                 oauth2?: scalar|Param|null,
+ *             },
+ *         },
+ *         http_basic?: array{
+ *             provider?: scalar|Param|null,
+ *             realm?: scalar|Param|null, // Default: "Secured Area"
+ *         },
+ *         http_basic_ldap?: array{
+ *             provider?: scalar|Param|null,
+ *             realm?: scalar|Param|null, // Default: "Secured Area"
+ *             service?: scalar|Param|null, // Default: "ldap"
+ *             dn_string?: scalar|Param|null, // Default: "{user_identifier}"
+ *             query_string?: scalar|Param|null,
+ *             search_dn?: scalar|Param|null, // Default: ""
+ *             search_password?: scalar|Param|null, // Default: ""
+ *         },
+ *         remember_me?: array{
+ *             secret?: scalar|Param|null, // Default: "%kernel.secret%"
+ *             service?: scalar|Param|null,
+ *             user_providers?: Param|string|list<scalar|Param|null>,
+ *             catch_exceptions?: bool|Param, // Default: true
+ *             signature_properties?: list<scalar|Param|null>,
+ *             token_provider?: Param|string|array{
+ *                 service?: scalar|Param|null, // The service ID of a custom remember-me token provider.
+ *                 doctrine?: bool|array{
+ *                     enabled?: bool|Param, // Default: false
+ *                     connection?: scalar|Param|null, // Default: null
+ *                 },
+ *             },
+ *             token_verifier?: scalar|Param|null, // The service ID of a custom rememberme token verifier.
+ *             name?: scalar|Param|null, // Default: "REMEMBERME"
+ *             lifetime?: int|Param, // Default: 31536000
+ *             path?: scalar|Param|null, // Default: "/"
+ *             domain?: scalar|Param|null, // Default: null
+ *             secure?: true|false|"auto"|Param, // Defaults to the value of "framework.session.cookie_secure", or to "auto".
+ *             httponly?: bool|Param, // Default: true
+ *             samesite?: null|"lax"|"strict"|"none"|Param, // Defaults to the value of "framework.session.cookie_samesite", or to "lax".
+ *             always_remember_me?: bool|Param, // Default: false
+ *             remember_me_parameter?: scalar|Param|null, // Default: "_remember_me"
+ *         },
+ *     }>,
+ *     access_control?: list<array{ // Default: []
+ *         request_matcher?: scalar|Param|null, // Default: null
+ *         requires_channel?: scalar|Param|null, // Default: null
+ *         path?: scalar|Param|null, // Use the urldecoded format. // Default: null
+ *         host?: scalar|Param|null, // Default: null
+ *         port?: int|Param, // Default: null
+ *         ips?: Param|string|list<scalar|Param|null>,
+ *         attributes?: array<string, scalar|Param|null>,
+ *         route?: scalar|Param|null, // Default: null
+ *         methods?: Param|string|list<scalar|Param|null>,
+ *         allow_if?: scalar|Param|null, // Default: null
+ *         roles?: Param|string|list<scalar|Param|null>,
+ *     }>,
+ *     role_hierarchy?: array<string, Param|string|list<scalar|Param|null>>,
+ * }
+ * @psalm-type SensiolabsGotenbergConfig = array{
+ *     assets_directory?: list<scalar|Param|null>,
+ *     version?: scalar|Param|null, // Version of Gotenberg // Default: null
+ *     http_client?: scalar|Param|null, // HTTP Client reference to use. (Must have a base_uri)
+ *     request_context?: array{ // Override the request Gotenberg will make to call one of your routes.
+ *         base_uri?: scalar|Param|null, // Used only when using `->route()`. Overrides the guessed `base_url` from the request. May be useful in CLI.
+ *     },
+ *     controller_listener?: bool|Param, // Enables the listener on kernel.view to stream GotenbergFileResult object. // Default: true
+ *     webhook?: array<string, array{ // Default: []
+ *         name?: scalar|Param|null,
+ *         success?: array{
+ *             url?: scalar|Param|null, // The URL to call.
+ *             route?: mixed, // Route configuration.
+ *             method?: "POST"|"PUT"|"PATCH"|Param, // HTTP method to use on that endpoint. // Default: null
+ *         },
+ *         error?: array{
+ *             url?: scalar|Param|null, // The URL to call.
+ *             route?: mixed, // Route configuration.
+ *             method?: "POST"|"PUT"|"PATCH"|Param, // HTTP method to use on that endpoint. // Default: null
+ *         },
+ *         extra_http_headers?: array<string, mixed>,
+ *     }>,
+ *     default_options?: array{
+ *         webhook?: scalar|Param|null, // Webhook configuration name.
+ *         pdf?: array{
+ *             convert?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 pdf_universal_access?: bool|Param,
+ *                 pdf_format?: "PDF/A-1b"|"PDF/A-2b"|"PDF/A-3b"|Param,
+ *                 flatten?: bool|Param,
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *             },
+ *             encrypt?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 owner_password?: scalar|Param|null,
+ *                 user_password?: scalar|Param|null,
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *             },
+ *             embed?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *             },
+ *             flatten?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *             },
+ *             html?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 split_unify?: bool|Param,
+ *                 split_span?: scalar|Param|null,
+ *                 split_mode?: "intervals"|"pages"|Param,
+ *                 pdf_universal_access?: bool|Param,
+ *                 pdf_format?: "PDF/A-1b"|"PDF/A-2b"|"PDF/A-3b"|Param,
+ *                 metadata?: array{
+ *                     Author?: scalar|Param|null,
+ *                     Copyright?: scalar|Param|null,
+ *                     CreationDate?: scalar|Param|null,
+ *                     Creator?: scalar|Param|null,
+ *                     Keywords?: scalar|Param|null,
+ *                     Marked?: bool|Param,
+ *                     ModDate?: scalar|Param|null,
+ *                     PDFVersion?: scalar|Param|null,
+ *                     Producer?: scalar|Param|null,
+ *                     Subject?: scalar|Param|null,
+ *                     Title?: scalar|Param|null,
+ *                     Trapped?: "True"|"False"|"Unknown"|Param,
+ *                 },
+ *                 flatten?: bool|Param,
+ *                 owner_password?: scalar|Param|null,
+ *                 user_password?: scalar|Param|null,
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *                 wait_for_selector?: scalar|Param|null,
+ *                 wait_for_expression?: scalar|Param|null,
+ *                 wait_delay?: scalar|Param|null,
+ *                 skip_network_idle_event?: bool|Param,
+ *                 generate_tagged_pdf?: bool|Param,
+ *                 native_page_ranges?: scalar|Param|null,
+ *                 scale?: float|Param,
+ *                 landscape?: bool|Param,
+ *                 omit_background?: bool|Param,
+ *                 print_background?: bool|Param,
+ *                 generate_document_outline?: bool|Param,
+ *                 prefer_css_page_size?: bool|Param,
+ *                 margin_right?: scalar|Param|null,
+ *                 margin_left?: scalar|Param|null,
+ *                 margin_bottom?: scalar|Param|null,
+ *                 margin_top?: scalar|Param|null,
+ *                 paper_standard_size?: "letter"|"legal"|"tabloid"|"ledger"|"A0"|"A1"|"A2"|"A3"|"A4"|"A5"|"A6"|Param,
+ *                 paper_height?: scalar|Param|null,
+ *                 paper_width?: scalar|Param|null,
+ *                 single_page?: bool|Param,
+ *                 ignore_resource_http_status_domains?: list<scalar|Param|null>,
+ *                 fail_on_console_exceptions?: bool|Param,
+ *                 fail_on_resource_loading_failed?: bool|Param,
+ *                 fail_on_resource_http_status_codes?: list<int|Param>,
+ *                 fail_on_http_status_codes?: list<int|Param>,
+ *                 emulated_media_type?: "print"|"screen"|Param,
+ *                 emulated_media_features?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                 }>,
+ *                 extra_http_headers?: array<string, mixed>,
+ *                 user_agent?: scalar|Param|null,
+ *                 cookies?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                     domain?: scalar|Param|null,
+ *                     path?: scalar|Param|null,
+ *                     secure?: bool|Param,
+ *                     httpOnly?: bool|Param,
+ *                     sameSite?: "Strict"|"Lax"|"None"|Param,
+ *                 }>,
+ *                 footer?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *                 header?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *             },
+ *             office?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 split_unify?: bool|Param,
+ *                 split_span?: scalar|Param|null,
+ *                 split_mode?: "intervals"|"pages"|Param,
+ *                 pdf_universal_access?: bool|Param,
+ *                 pdf_format?: "PDF/A-1b"|"PDF/A-2b"|"PDF/A-3b"|Param,
+ *                 metadata?: array{
+ *                     Author?: scalar|Param|null,
+ *                     Copyright?: scalar|Param|null,
+ *                     CreationDate?: scalar|Param|null,
+ *                     Creator?: scalar|Param|null,
+ *                     Keywords?: scalar|Param|null,
+ *                     Marked?: bool|Param,
+ *                     ModDate?: scalar|Param|null,
+ *                     PDFVersion?: scalar|Param|null,
+ *                     Producer?: scalar|Param|null,
+ *                     Subject?: scalar|Param|null,
+ *                     Title?: scalar|Param|null,
+ *                     Trapped?: "True"|"False"|"Unknown"|Param,
+ *                 },
+ *                 update_indexes?: bool|Param,
+ *                 max_image_resolution?: 75|150|300|600|1200|Param,
+ *                 reduce_image_resolution?: bool|Param,
+ *                 quality?: int|Param,
+ *                 lossless_image_compression?: bool|Param,
+ *                 merge?: bool|Param,
+ *                 single_page_sheets?: bool|Param,
+ *                 add_original_document_as_stream?: bool|Param,
+ *                 skip_empty_pages?: bool|Param,
+ *                 export_hidden_slides?: bool|Param,
+ *                 export_links_relative_fsys?: bool|Param,
+ *                 convert_ooo_target_to_pdf_target?: bool|Param,
+ *                 export_notes_in_margin?: bool|Param,
+ *                 export_only_notes_pages?: bool|Param,
+ *                 export_notes_pages?: bool|Param,
+ *                 export_notes?: bool|Param,
+ *                 export_placeholders?: bool|Param,
+ *                 export_bookmarks_to_pdf_destination?: bool|Param,
+ *                 do_not_export_bookmarks?: bool|Param,
+ *                 allow_duplicate_field_names?: bool|Param,
+ *                 do_not_export_form_fields?: bool|Param,
+ *                 native_page_ranges?: scalar|Param|null,
+ *                 landscape?: bool|Param,
+ *                 password?: scalar|Param|null,
+ *                 flatten?: bool|Param,
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *                 owner_password?: scalar|Param|null,
+ *                 user_password?: scalar|Param|null,
+ *             },
+ *             markdown?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 split_unify?: bool|Param,
+ *                 split_span?: scalar|Param|null,
+ *                 split_mode?: "intervals"|"pages"|Param,
+ *                 pdf_universal_access?: bool|Param,
+ *                 pdf_format?: "PDF/A-1b"|"PDF/A-2b"|"PDF/A-3b"|Param,
+ *                 metadata?: array{
+ *                     Author?: scalar|Param|null,
+ *                     Copyright?: scalar|Param|null,
+ *                     CreationDate?: scalar|Param|null,
+ *                     Creator?: scalar|Param|null,
+ *                     Keywords?: scalar|Param|null,
+ *                     Marked?: bool|Param,
+ *                     ModDate?: scalar|Param|null,
+ *                     PDFVersion?: scalar|Param|null,
+ *                     Producer?: scalar|Param|null,
+ *                     Subject?: scalar|Param|null,
+ *                     Title?: scalar|Param|null,
+ *                     Trapped?: "True"|"False"|"Unknown"|Param,
+ *                 },
+ *                 flatten?: bool|Param,
+ *                 owner_password?: scalar|Param|null,
+ *                 user_password?: scalar|Param|null,
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *                 wait_for_selector?: scalar|Param|null,
+ *                 wait_for_expression?: scalar|Param|null,
+ *                 wait_delay?: scalar|Param|null,
+ *                 skip_network_idle_event?: bool|Param,
+ *                 generate_tagged_pdf?: bool|Param,
+ *                 native_page_ranges?: scalar|Param|null,
+ *                 scale?: float|Param,
+ *                 landscape?: bool|Param,
+ *                 omit_background?: bool|Param,
+ *                 print_background?: bool|Param,
+ *                 generate_document_outline?: bool|Param,
+ *                 prefer_css_page_size?: bool|Param,
+ *                 margin_right?: scalar|Param|null,
+ *                 margin_left?: scalar|Param|null,
+ *                 margin_bottom?: scalar|Param|null,
+ *                 margin_top?: scalar|Param|null,
+ *                 paper_standard_size?: "letter"|"legal"|"tabloid"|"ledger"|"A0"|"A1"|"A2"|"A3"|"A4"|"A5"|"A6"|Param,
+ *                 paper_height?: scalar|Param|null,
+ *                 paper_width?: scalar|Param|null,
+ *                 single_page?: bool|Param,
+ *                 ignore_resource_http_status_domains?: list<scalar|Param|null>,
+ *                 fail_on_console_exceptions?: bool|Param,
+ *                 fail_on_resource_loading_failed?: bool|Param,
+ *                 fail_on_resource_http_status_codes?: list<int|Param>,
+ *                 fail_on_http_status_codes?: list<int|Param>,
+ *                 emulated_media_type?: "print"|"screen"|Param,
+ *                 emulated_media_features?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                 }>,
+ *                 extra_http_headers?: array<string, mixed>,
+ *                 user_agent?: scalar|Param|null,
+ *                 cookies?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                     domain?: scalar|Param|null,
+ *                     path?: scalar|Param|null,
+ *                     secure?: bool|Param,
+ *                     httpOnly?: bool|Param,
+ *                     sameSite?: "Strict"|"Lax"|"None"|Param,
+ *                 }>,
+ *                 footer?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *                 header?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *             },
+ *             merge?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 pdf_universal_access?: bool|Param,
+ *                 pdf_format?: "PDF/A-1b"|"PDF/A-2b"|"PDF/A-3b"|Param,
+ *                 metadata?: array{
+ *                     Author?: scalar|Param|null,
+ *                     Copyright?: scalar|Param|null,
+ *                     CreationDate?: scalar|Param|null,
+ *                     Creator?: scalar|Param|null,
+ *                     Keywords?: scalar|Param|null,
+ *                     Marked?: bool|Param,
+ *                     ModDate?: scalar|Param|null,
+ *                     PDFVersion?: scalar|Param|null,
+ *                     Producer?: scalar|Param|null,
+ *                     Subject?: scalar|Param|null,
+ *                     Title?: scalar|Param|null,
+ *                     Trapped?: "True"|"False"|"Unknown"|Param,
+ *                 },
+ *                 flatten?: bool|Param,
+ *                 owner_password?: scalar|Param|null,
+ *                 user_password?: scalar|Param|null,
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *             },
+ *             split?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 split_unify?: bool|Param,
+ *                 split_span?: scalar|Param|null,
+ *                 split_mode?: "intervals"|"pages"|Param,
+ *                 pdf_universal_access?: bool|Param,
+ *                 pdf_format?: "PDF/A-1b"|"PDF/A-2b"|"PDF/A-3b"|Param,
+ *                 metadata?: array{
+ *                     Author?: scalar|Param|null,
+ *                     Copyright?: scalar|Param|null,
+ *                     CreationDate?: scalar|Param|null,
+ *                     Creator?: scalar|Param|null,
+ *                     Keywords?: scalar|Param|null,
+ *                     Marked?: bool|Param,
+ *                     ModDate?: scalar|Param|null,
+ *                     PDFVersion?: scalar|Param|null,
+ *                     Producer?: scalar|Param|null,
+ *                     Subject?: scalar|Param|null,
+ *                     Title?: scalar|Param|null,
+ *                     Trapped?: "True"|"False"|"Unknown"|Param,
+ *                 },
+ *                 flatten?: bool|Param,
+ *                 owner_password?: scalar|Param|null,
+ *                 user_password?: scalar|Param|null,
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *             },
+ *             url?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 split_unify?: bool|Param,
+ *                 split_span?: scalar|Param|null,
+ *                 split_mode?: "intervals"|"pages"|Param,
+ *                 pdf_universal_access?: bool|Param,
+ *                 pdf_format?: "PDF/A-1b"|"PDF/A-2b"|"PDF/A-3b"|Param,
+ *                 metadata?: array{
+ *                     Author?: scalar|Param|null,
+ *                     Copyright?: scalar|Param|null,
+ *                     CreationDate?: scalar|Param|null,
+ *                     Creator?: scalar|Param|null,
+ *                     Keywords?: scalar|Param|null,
+ *                     Marked?: bool|Param,
+ *                     ModDate?: scalar|Param|null,
+ *                     PDFVersion?: scalar|Param|null,
+ *                     Producer?: scalar|Param|null,
+ *                     Subject?: scalar|Param|null,
+ *                     Title?: scalar|Param|null,
+ *                     Trapped?: "True"|"False"|"Unknown"|Param,
+ *                 },
+ *                 flatten?: bool|Param,
+ *                 owner_password?: scalar|Param|null,
+ *                 user_password?: scalar|Param|null,
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *                 wait_for_selector?: scalar|Param|null,
+ *                 wait_for_expression?: scalar|Param|null,
+ *                 wait_delay?: scalar|Param|null,
+ *                 skip_network_idle_event?: bool|Param,
+ *                 generate_tagged_pdf?: bool|Param,
+ *                 native_page_ranges?: scalar|Param|null,
+ *                 scale?: float|Param,
+ *                 landscape?: bool|Param,
+ *                 omit_background?: bool|Param,
+ *                 print_background?: bool|Param,
+ *                 generate_document_outline?: bool|Param,
+ *                 prefer_css_page_size?: bool|Param,
+ *                 margin_right?: scalar|Param|null,
+ *                 margin_left?: scalar|Param|null,
+ *                 margin_bottom?: scalar|Param|null,
+ *                 margin_top?: scalar|Param|null,
+ *                 paper_standard_size?: "letter"|"legal"|"tabloid"|"ledger"|"A0"|"A1"|"A2"|"A3"|"A4"|"A5"|"A6"|Param,
+ *                 paper_height?: scalar|Param|null,
+ *                 paper_width?: scalar|Param|null,
+ *                 single_page?: bool|Param,
+ *                 ignore_resource_http_status_domains?: list<scalar|Param|null>,
+ *                 fail_on_console_exceptions?: bool|Param,
+ *                 fail_on_resource_loading_failed?: bool|Param,
+ *                 fail_on_resource_http_status_codes?: list<int|Param>,
+ *                 fail_on_http_status_codes?: list<int|Param>,
+ *                 emulated_media_type?: "print"|"screen"|Param,
+ *                 emulated_media_features?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                 }>,
+ *                 extra_http_headers?: array<string, mixed>,
+ *                 user_agent?: scalar|Param|null,
+ *                 cookies?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                     domain?: scalar|Param|null,
+ *                     path?: scalar|Param|null,
+ *                     secure?: bool|Param,
+ *                     httpOnly?: bool|Param,
+ *                     sameSite?: "Strict"|"Lax"|"None"|Param,
+ *                 }>,
+ *                 footer?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *                 header?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *             },
+ *         },
+ *         screenshot?: array{
+ *             html?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *                 wait_for_selector?: scalar|Param|null,
+ *                 wait_for_expression?: scalar|Param|null,
+ *                 wait_delay?: scalar|Param|null,
+ *                 optimize_for_speed?: bool|Param,
+ *                 omit_background?: bool|Param,
+ *                 quality?: int|Param,
+ *                 format?: "png"|"jpeg"|"webp"|Param,
+ *                 clip?: bool|Param,
+ *                 height?: int|Param,
+ *                 width?: int|Param,
+ *                 skip_network_idle_event?: bool|Param,
+ *                 ignore_resource_http_status_domains?: list<scalar|Param|null>,
+ *                 fail_on_console_exceptions?: bool|Param,
+ *                 fail_on_resource_loading_failed?: bool|Param,
+ *                 fail_on_resource_http_status_codes?: list<int|Param>,
+ *                 fail_on_http_status_codes?: list<int|Param>,
+ *                 emulated_media_type?: "print"|"screen"|Param,
+ *                 emulated_media_features?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                 }>,
+ *                 extra_http_headers?: array<string, mixed>,
+ *                 user_agent?: scalar|Param|null,
+ *                 cookies?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                     domain?: scalar|Param|null,
+ *                     path?: scalar|Param|null,
+ *                     secure?: bool|Param,
+ *                     httpOnly?: bool|Param,
+ *                     sameSite?: "Strict"|"Lax"|"None"|Param,
+ *                 }>,
+ *                 footer?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *                 header?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *             },
+ *             markdown?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *                 wait_for_selector?: scalar|Param|null,
+ *                 wait_for_expression?: scalar|Param|null,
+ *                 wait_delay?: scalar|Param|null,
+ *                 optimize_for_speed?: bool|Param,
+ *                 omit_background?: bool|Param,
+ *                 quality?: int|Param,
+ *                 format?: "png"|"jpeg"|"webp"|Param,
+ *                 clip?: bool|Param,
+ *                 height?: int|Param,
+ *                 width?: int|Param,
+ *                 skip_network_idle_event?: bool|Param,
+ *                 ignore_resource_http_status_domains?: list<scalar|Param|null>,
+ *                 fail_on_console_exceptions?: bool|Param,
+ *                 fail_on_resource_loading_failed?: bool|Param,
+ *                 fail_on_resource_http_status_codes?: list<int|Param>,
+ *                 fail_on_http_status_codes?: list<int|Param>,
+ *                 emulated_media_type?: "print"|"screen"|Param,
+ *                 emulated_media_features?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                 }>,
+ *                 extra_http_headers?: array<string, mixed>,
+ *                 user_agent?: scalar|Param|null,
+ *                 cookies?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                     domain?: scalar|Param|null,
+ *                     path?: scalar|Param|null,
+ *                     secure?: bool|Param,
+ *                     httpOnly?: bool|Param,
+ *                     sameSite?: "Strict"|"Lax"|"None"|Param,
+ *                 }>,
+ *                 footer?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *                 header?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *             },
+ *             url?: array{
+ *                 webhook?: Param|string|array{
+ *                     config_name?: scalar|Param|null,
+ *                     success?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     error?: array{
+ *                         url?: scalar|Param|null,
+ *                         route?: mixed,
+ *                         method?: "POST"|"PUT"|"PATCH"|Param,
+ *                     },
+ *                     extra_http_headers?: array<string, mixed>,
+ *                 },
+ *                 download_from?: list<array{ // Default: []
+ *                     url?: scalar|Param|null,
+ *                     extraHttpHeaders?: array<string, array{ // Default: []
+ *                         name?: scalar|Param|null,
+ *                         value?: scalar|Param|null,
+ *                     }>,
+ *                 }>,
+ *                 wait_for_selector?: scalar|Param|null,
+ *                 wait_for_expression?: scalar|Param|null,
+ *                 wait_delay?: scalar|Param|null,
+ *                 optimize_for_speed?: bool|Param,
+ *                 omit_background?: bool|Param,
+ *                 quality?: int|Param,
+ *                 format?: "png"|"jpeg"|"webp"|Param,
+ *                 clip?: bool|Param,
+ *                 height?: int|Param,
+ *                 width?: int|Param,
+ *                 skip_network_idle_event?: bool|Param,
+ *                 ignore_resource_http_status_domains?: list<scalar|Param|null>,
+ *                 fail_on_console_exceptions?: bool|Param,
+ *                 fail_on_resource_loading_failed?: bool|Param,
+ *                 fail_on_resource_http_status_codes?: list<int|Param>,
+ *                 fail_on_http_status_codes?: list<int|Param>,
+ *                 emulated_media_type?: "print"|"screen"|Param,
+ *                 emulated_media_features?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                 }>,
+ *                 extra_http_headers?: array<string, mixed>,
+ *                 user_agent?: scalar|Param|null,
+ *                 cookies?: list<array{ // Default: []
+ *                     name?: scalar|Param|null,
+ *                     value?: scalar|Param|null,
+ *                     domain?: scalar|Param|null,
+ *                     path?: scalar|Param|null,
+ *                     secure?: bool|Param,
+ *                     httpOnly?: bool|Param,
+ *                     sameSite?: "Strict"|"Lax"|"None"|Param,
+ *                 }>,
+ *                 footer?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *                 header?: array{
+ *                     template?: scalar|Param|null,
+ *                     context?: list<mixed>,
+ *                 },
+ *             },
+ *         },
+ *     },
+ * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
@@ -990,6 +2063,8 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     doctrine?: DoctrineConfig,
  *     doctrine_migrations?: DoctrineMigrationsConfig,
  *     maker?: MakerConfig,
+ *     security?: SecurityConfig,
+ *     sensiolabs_gotenberg?: SensiolabsGotenbergConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
@@ -999,6 +2074,8 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         doctrine?: DoctrineConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *         maker?: MakerConfig,
+ *         security?: SecurityConfig,
+ *         sensiolabs_gotenberg?: SensiolabsGotenbergConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,
