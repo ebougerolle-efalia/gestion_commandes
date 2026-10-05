@@ -13,9 +13,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class ProduitController extends AbstractController
 {
+    #[IsGranted('ROLE_ADMIN')]
     #[Route('/produits/{carteId}', name: 'app_produit_index')]
     public function index(
         int $carteId,
@@ -36,6 +38,7 @@ class ProduitController extends AbstractController
         ]);
     }
 
+    #[IsGranted('ROLE_ADMIN')]
     #[Route('/produits/{carteId}/ajouter', name: 'app_produit_add', methods: ['POST'])]
     public function add(int $carteId, Request $request, CarteRepository $carteRepo, CategorieRepository $catRepo, EntityManagerInterface $em): Response
     {
@@ -68,6 +71,7 @@ class ProduitController extends AbstractController
         return $this->redirectToRoute('app_produit_index', ['carteId' => $carteId]);
     }
 
+    #[IsGranted('ROLE_ADMIN')]
     #[Route('/produits/{carteId}/modifier/{id}', name: 'app_produit_edit', methods: ['POST'])]
     public function edit(int $carteId, int $id, Request $request, ProduitRepository $repo, CategorieRepository $catRepo, EntityManagerInterface $em): Response
     {
@@ -92,6 +96,7 @@ class ProduitController extends AbstractController
         return $this->redirectToRoute('app_produit_index', ['carteId' => $carteId]);
     }
 
+    #[IsGranted('ROLE_ADMIN')]
     #[Route('/produits/{carteId}/supprimer/{id}', name: 'app_produit_delete', methods: ['POST'])]
     public function delete(int $carteId, int $id, ProduitRepository $repo, EntityManagerInterface $em): Response
     {

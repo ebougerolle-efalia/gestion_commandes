@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class CommandeController extends AbstractController
 {
@@ -207,6 +208,7 @@ class CommandeController extends AbstractController
     }
 
     /** PDF étiquettes 105x37mm */
+    #[IsGranted('ROLE_ADMIN')]
     #[Route('/commandes/{carteId}/etiquettes', name: 'app_commande_etiquettes')]
     public function etiquettes(int $carteId, CarteRepository $carteRepo, CommandeRepository $cmdRepo, GotenbergPdfInterface $gotenberg): Response
     {
