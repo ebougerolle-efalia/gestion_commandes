@@ -47,11 +47,11 @@
             <ul class="space-y-0.5 mb-6">
                 <li><a href="{{ path('app_commande_index', {carteId: carte.id}) }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') == 'app_commande_index' ? 'active' }}"><i class="sidebar-icon fas fa-clipboard-list w-5 text-center text-[13px]"></i>Commandes</a></li>
                 <li><a href="{{ path('app_commande_new', {carteId: carte.id}) }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') == 'app_commande_new' or app.request.get('_route') == 'app_commande_edit' ? 'active' }}"><i class="sidebar-icon fas fa-cart-plus w-5 text-center text-[13px]"></i>Saisie commande</a></li>
+                <li><a href="{{ path('app_commande_etiquettes', {carteId: carte.id}) }}" target="_blank" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px]"><i class="sidebar-icon fas fa-print w-5 text-center text-[13px]"></i>Étiquettes</a></li>
                 {% if is_granted('ROLE_ADMIN') %}
                 <li><a href="{{ path('app_produit_index', {carteId: carte.id}) }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_produit' ? 'active' }}"><i class="sidebar-icon fas fa-box-open w-5 text-center text-[13px]"></i>Produits</a></li>
                 <li><a href="{{ path('app_categorie_index', {carteId: carte.id}) }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_categorie' ? 'active' }}"><i class="sidebar-icon fas fa-tags w-5 text-center text-[13px]"></i>Catégories</a></li>
                 <li><a href="{{ path('app_statistique_index', {carteId: carte.id}) }}" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px] {{ app.request.get('_route') starts with 'app_statistique' ? 'active' }}"><i class="sidebar-icon fas fa-chart-pie w-5 text-center text-[13px]"></i>Statistiques</a></li>
-                <li><a href="{{ path('app_commande_etiquettes', {carteId: carte.id}) }}" target="_blank" class="sidebar-link flex items-center gap-3.5 px-4 py-2.5 rounded-lg text-[14px]"><i class="sidebar-icon fas fa-print w-5 text-center text-[13px]"></i>Étiquettes</a></li>
                 {% endif %}
             </ul>
             {% endif %}
